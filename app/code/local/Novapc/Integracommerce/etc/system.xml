@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * MM Ajax 
+ * 
+ * @category     Novapc
+ * @package      Novapc_Integracommerce 
+ * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
+ * @author       NovaPC
+ * @version      Release: 1.0.0
+ */
+-->
+<config>
+    <tabs>
+        <integracommerce translate="label" module="integracommerce">
+            <label>Integracommerce</label>
+            <sort_order>799</sort_order>
+        </integracommerce>
+    </tabs>
+	<sections>
+		<integracommerce translate="label" module="integracommerce">
+            <label>Integracommece</label>
+            <tab>integracommerce</tab>
+            <frontend_type>text</frontend_type>
+            <sort_order>50</sort_order>
+            <show_in_default>1</show_in_default>
+            <show_in_website>1</show_in_website>
+            <show_in_store>1</show_in_store>
+            <groups>
+                <novapc_information_group translate="label" module="integracommerce">
+                    <label>Important informations</label>
+                    <sort_order>0</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <comment>
+                        <![CDATA[
+                            <div>
+                                <h3>v. 1.0.0 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
+                                <img src="http://novapc.com.br/images/logo.png" alt="Smiley face" height="200" width="300">
+                                <br>
+                                <br>
+                                Site: <a href="http://www.novapc.com.br/" target="_blank">www.novapc.com.br/</a>
+                                <br>
+                                E-mail: novapc@novapc.com.br
+                                <br>
+                                Telefone: 14-2104-5600
+                                <br>
+                                <hr>
+                                <br>
+                            </div>
+                        ]]>
+                    </comment>
+                </novapc_information_group>                
+                <general translate="label" module="integracommerce">
+                    <label>General</label>
+                    <sort_order>100</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <environment translate="label">
+                            <label>Environment</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_environment</source_model>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Select the environment you desire.</comment>
+                        </environment>
+                        <export_type translate="label">
+                            <label>Tipo de Exportação</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_export</source_model>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Selecione o tipo de exportação desejada</comment>
+                        </export_type>
+                        <api_user translate="label">
+                            <label>API User</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>30</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </api_user>
+                        <api_password translate="label">
+                            <label>API Password</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>40</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                        </api_password>  
+                        <configprod translate="label">
+                            <label>Configurable Products</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_configprod</source_model>
+                            <sort_order>50</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <tooltip>Select if you wan't to create a Single Product in Integracommerce for all your product variations or a Product for every variation.</tooltip>
+                        </configprod>                           
+                        <attributes translate="label">
+                            <label>Product Attributes</label>
+                            <frontend_type>multiselect</frontend_type>
+                            <sort_order>60</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <can_be_empty>1</can_be_empty>
+                            <comment>Selecione os atributos a serem exportados, utilize CTRL para selecionar vários e/ou desmarcar.</comment>
+                            <source_model>integracommerce/system_config_source_dropdown_prodattr</source_model>
+                        </attributes>
+                        <sku_attributes translate="label">
+                             <label>SKU Attributes</label>
+                             <sort_order>70</sort_order>
+                             <show_in_default>1</show_in_default>
+                             <show_in_website>1</show_in_website>
+                             <show_in_store>1</show_in_store>
+                             <frontend_model>integracommerce/adminhtml_form_field_sku</frontend_model>
+                             <backend_model>integracommerce/system_config_backend_sku</backend_model>
+                         </sku_attributes>
+                        <measure translate="label">
+                            <label>Measure</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_measure</source_model>
+                            <sort_order>80</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Selecione o tipo de medida.</comment>
+                        </measure>
+                        <sku_control translate="label">
+                            <label>Controle de Produto</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_control</source_model>
+                            <sort_order>90</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <comment>Selecione o campo para o controle dos Produtos.</comment>
+                        </sku_control>
+                    </fields>
+                </general>
+                <attributes translate="label" module="integracommerce">
+                    <label>Atributos</label>
+                    <sort_order>200</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields> 
+                        <nbm_origin translate="label" module="integracommerce">
+                            <label>NBM Origin</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the NBM Origin.</comment>
+                            <tooltip>Select the attribute that corresponds to nbm origin in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>10</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </nbm_origin>   
+                        <nbm_number translate="label" module="integracommerce">
+                            <label>NBM Number</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the NBM Number.</comment>
+                            <tooltip>Select the attribute that corresponds to nbm number in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>20</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </nbm_number>   
+                        <warranty translate="label" module="integracommerce">
+                            <label>Warranty</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the Warranty.</comment>
+                            <tooltip>Select the attribute that corresponds to warranty in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>30</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </warranty>  
+                        <brand translate="label" module="integracommerce">
+                            <label>Brand</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the Brand.</comment>
+                            <tooltip>Select the attribute that corresponds to brand in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>40</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </brand> 
+                        <height translate="label" module="integracommerce">
+                            <label>Height</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the Height.</comment>
+                            <tooltip>Select the attribute that corresponds to height in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>50</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </height>
+                        <width translate="label" module="integracommerce">
+                            <label>Width</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the width.</comment>
+                            <tooltip>Select the attribute that corresponds to width in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>60</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </width>         
+                        <length translate="label" module="integracommerce">
+                            <label>Length</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the length.</comment>
+                            <tooltip>Select the attribute that corresponds to length in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>70</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </length>   
+                        <weight translate="label" module="integracommerce">
+                            <label>Weight</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the weight.</comment>
+                            <tooltip>Select the attribute that corresponds to weight in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>80</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </weight>
+                        <ean translate="label" module="integracommerce">
+                            <label>Ean</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the ean.</comment>
+                            <tooltip>Select the attribute that corresponds to ean in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>90</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </ean>   
+                        <ncm translate="label" module="integracommerce">
+                            <label>Ncm</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the ncm.</comment>
+                            <tooltip>Select the attribute that corresponds to ncm in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>100</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </ncm>
+                        <isbn translate="label" module="integracommerce">
+                            <label>Isbn</label>
+                            <backend_model>integracommerce/intgrattr</backend_model>
+                            <comment>Attribute corresponding to the isbn.</comment>
+                            <tooltip>Select the attribute that corresponds to isbn in Integracommerce</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>110</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </isbn>
+                        <ierg translate="label" module="integracommerce">
+                            <label>Inscrição Estadual</label>
+                            <comment>Atributo correspondente a Inscrição Estadual.</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>120</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_customer</source_model>
+                        </ierg>
+                    </fields>
+                </attributes>
+               <order_status translate="label" module="integracommerce">
+                    <label>Status de Pedido</label>
+                    <sort_order>300</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <nota_fiscal translate="label" module="integracommerce">
+                            <label>Nota Fiscal</label>
+                            <sort_order>40</sort_order>
+                            <comment>Selecione o status em que serão inseridos os dados da Nota Fiscal no pedido.</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_status</source_model>
+                        </nota_fiscal>
+                        <dados_rastreio translate="label" module="integracommerce">
+                            <label>Dados de Rastreio</label>
+                            <sort_order>50</sort_order>
+                            <comment>Selecione o status em que serão inseridos os dados de rastreio no pedido.</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_status</source_model>
+                        </dados_rastreio>
+                        <approved translate="label" module="integracommerce">
+                            <label>Pedido Aprovado</label>
+                            <sort_order>60</sort_order>
+                            <comment>Selecione o status que representa o Aprovado em sua loja.</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_status</source_model>
+                        </approved>
+                    </fields>
+                </order_status> 
+            </groups>
+        </integracommerce>
+	</sections>
+</config>

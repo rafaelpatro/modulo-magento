@@ -1,0 +1,99 @@
+<?php
+/**
+ * Novapc Integracommerce
+ * 
+ * @category     Novapc
+ * @package      Novapc_Integracommerce 
+ * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
+ * @author       Novapc
+ * @version      Release: 1.0.0 
+ */
+
+class Novapc_Integracommerce_Block_Adminhtml_Integration_Grid extends Mage_Adminhtml_Block_Widget_Grid 
+{
+	public function __construct() 
+	{
+        parent::__construct();
+        $this->setId('integrationGrid');
+        $this->setDefaultSort('id');
+        $this->setDefaultDir('desc');
+        $this->setSaveParametersInSession(true);
+        $this->setUseAjax(true);
+        $this->setVarNameFilter('integration_filter');
+    }
+
+    protected function _getStore() {
+        $storeId = (int) $this->getRequest()->getParam('store', 0);
+        return Mage::app()->getStore($storeId);
+    }        
+    
+    protected function _prepareCollection() 
+    {
+    	$collection = Mage::getModel('integracommerce/integration')->getCollection();
+		
+		$this->setCollection($collection);
+                  
+        parent::_prepareCollection();
+        
+        return $this;
+
+    }
+
+    protected function _prepareColumns() 
+    {
+        $this->addColumn('integra_model',
+            array(
+                'header'=> Mage::helper('integracommerce')->__('A integrar'),
+                'index' => 'integra_model',
+                'renderer' => 'Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Model',
+        ));
+
+        $this->addColumn('status',
+            array(
+                'header'=> Mage::helper('integracommerce')->__('Status'),
+                'index' => 'status',
+                'renderer' => 'Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status',
+        ));                
+
+        return parent::_prepareColumns();
+    }
+
+    protected function _prepareMassaction() {
+
+        $this->setMassactionIdField('entity_id');
+        $this->getMassactionBlock()->setFormFieldName('integracommerce_integration');
+
+        $this->getMassactionBlock()->addItem('category', array(
+            'label'    => Mage::helper('integracommerce')->__('Exportar Categorias'),
+            'url'      => $this->getUrl('*/*/massCategory')
+        ));
+
+        $this->getMassactionBlock()->addItem('insert', array(
+            'label'    => Mage::helper('integracommerce')->__('Exportar Produtos'),
+            'url'      => $this->getUrl('*/*/massInsert')
+        ));
+
+        $this->getMassactionBlock()->addItem('update', array(
+            'label'    => Mage::helper('integracommerce')->__('Atualizar Produtos'),
+            'url'      => $this->getUrl('*/*/massUpdate')
+        ));
+
+        return $this;
+    }
+
+    protected function _addColumnFilterToCollection($column) {
+
+        if ($this->getCollection()) {
+
+        }
+
+        return parent::_addColumnFilterToCollection($column);
+        
+    }
+    
+    public function getGridUrl() 
+    {
+        return $this->getUrl('*/*/grid', array('_current'=>true));
+    }
+
+}

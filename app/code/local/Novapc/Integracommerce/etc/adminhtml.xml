@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * MM Ajax 
+ * 
+ * @category     Novapc
+ * @package      Novapc_Integracommerce
+ * @copyright    Copyright (c) 2016 NovaPC (http://www.novapc.com.br/)
+ * @author       NovaPC
+ * @version      Release: 1.0.0
+ */
+-->
+<config>
+	<menu>
+            <integracommerce module="integracommerce">
+                <title>Integracommerce</title>
+                <sort_order>711</sort_order>
+                <children>
+
+                    <integration translate="title" module="integracommerce">
+                        <title>Exportação</title>
+                        <sort_order>1</sort_order>
+                        <action>integracommerce/adminhtml_integration</action>
+                    </integration>                    
+
+                    <orders translate="title" module="integracommerce">
+                        <title>Gerenciar Pedidos</title>
+                        <sort_order>2</sort_order>
+                        <action>integracommerce/adminhtml_orders</action>
+                    </orders>
+
+                    <report translate="title" module="integracommerce">
+                        <title>Relatório</title>
+                        <sort_order>3</sort_order>
+                        <action>integracommerce/adminhtml_report</action>
+                    </report>
+
+                    <integracommerce_configuration translate="title" module="integracommerce">
+                        <title>Configuração</title>
+                        <sort_order>4</sort_order>
+                        <action>adminhtml/system_config/edit/section/integracommerce/</action>
+                    </integracommerce_configuration>                    
+
+                </children>
+            </integracommerce>
+        </menu>
+   
+</config>

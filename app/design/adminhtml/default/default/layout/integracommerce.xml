@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<layout version="0.1.0">    
+
+    <integracommerce_adminhtml_integration_index>
+        
+       <reference name="head">
+            <action method="setTitle" translate="title">
+                <title>Integracommerce Integration</title>
+            </action>
+        </reference>
+        <reference name="content">
+            <block type="integracommerce/adminhtml_integration" name="integration.grid" template="integracommerce/integration/integration.phtml">
+                <block type="adminhtml/store_switcher" name="store_switcher" as="store_switcher">
+                    <action method="setUseConfirm">
+                        <params>0</params>
+                    </action>
+                </block>
+            </block>
+        </reference>
+    </integracommerce_adminhtml_integration_index>
+
+    <integracommerce_adminhtml_orders_index>
+        
+       <reference name="head">
+            <action method="setTitle" translate="title">
+                <title>Integracommerce Manage Orders</title>
+            </action>
+        </reference>
+        <reference name="content">
+            <block type="integracommerce/adminhtml_order" name="order.grid" template="integracommerce/order/order.phtml">
+                <block type="adminhtml/store_switcher" name="store_switcher" as="store_switcher">
+                    <action method="setUseConfirm">
+                        <params>0</params>
+                    </action>
+                </block>
+            </block>
+        </reference>
+    </integracommerce_adminhtml_orders_index>
+
+    <integracommerce_adminhtml_orders_view>
+        
+       <reference name="head">
+            <action method="setTitle" translate="title">
+                <title>Integracommerce View Order</title>
+            </action>
+        </reference>
+        <reference name="content">
+            <block type="integracommerce/adminhtml_order_view" name="order.grid" template="integracommerce/order/view.phtml">
+                <block type="adminhtml/store_switcher" name="store_switcher" as="store_switcher">
+                    <action method="setUseConfirm">
+                        <params>0</params>
+                    </action>
+                </block>
+            </block>
+        </reference>
+    </integracommerce_adminhtml_orders_view>
+
+    <integracommerce_adminhtml_report_index>
+
+        <reference name="head">
+            <action method="setTitle" translate="title">
+                <title>Integracommerce Relatorio</title>
+            </action>
+        </reference>
+        <reference name="content">
+            <block type="integracommerce/adminhtml_report" name="report.grid" template="integracommerce/report/report.phtml">
+                <block type="adminhtml/store_switcher" name="store_switcher" as="store_switcher">
+                    <action method="setUseConfirm">
+                        <params>0</params>
+                    </action>
+                </block>
+            </block>
+        </reference>
+    </integracommerce_adminhtml_report_index>
+
+</layout>
