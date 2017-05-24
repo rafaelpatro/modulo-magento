@@ -1,0 +1,11 @@
+Passos para remoção completa do módulo.
+
+• Realize um Backup do Magento Completo.
+• Caso a instalação tenha sido feita via Magento Connect, desinstale pelo próprio Magento Connect.
+• Caso a instalação tenha sido feita via extração dos arquivos no Magento, remova os seguintes diretórios:
+	○ app/code/local/Novapc... 
+	○ app/design/adminhtml/default/default/layout/integracommerce.xml
+	○ app/design/adminhtml/default/default/template/integracommerce...
+	○ app/etc/modules/Novapc_Integracommerce.xml
+	○ app/locale/pt_BR/Novapc_Integracommerce.csv
+• Execute o arquivo "uninstall.sql" no banco de dados.
