@@ -9,3 +9,5 @@ Passos para remoção completa do módulo.
 	○ app/etc/modules/Novapc_Integracommerce.xml
 	○ app/locale/pt_BR/Novapc_Integracommerce.csv
 • Execute o arquivo "uninstall.sql" no banco de dados.
+
+ATENÇÂO: Caso desejar manter as configurações do módulo, não executar o comando: " DELETE FROM `core_config_data` WHERE `path` LIKE 'integracommerce%'; ", presente no arquivo "uninstall.sql".
