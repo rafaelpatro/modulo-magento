@@ -17,13 +17,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
     public static function integrateCategory($authentication)
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
-
-       /* $configValue = Mage::getStoreConfig('catalog/frontend/flat_catalog_category');
-        if ($configValue == 1) {
-            $storeId = Mage::app()->getStore()->getStoreId();
-        } else {
-            $storeId = 0;
-        }*/
+        $configValue = Mage::getStoreConfig('catalog/frontend/flat_catalog_category');
 
 		$categories = Mage::getModel('catalog/category')
                         ->setStoreId(0)
@@ -58,6 +52,11 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                     //->saveAttribute($category, $attrCode);
             }
             sleep(2);
+        }
+
+        if ($configValue == 1) {
+            $indexer = Mage::getModel('index/indexer')->getProcessByCode('catalog_category_flat');
+            $indexer->reindexEverything();
         }
 
         return;
@@ -104,7 +103,9 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             $collection = Mage::getModel('catalog/product')->getCollection()
                             ->addFieldToFilter('integracommerce_sync',1)
                             ->addFieldToFilter('integracommerce_active',0)
-                            ->addAttributeToSelect('*');
+                            ->addAttributeToSelect('*')
+                            ->setPageSize(300)
+                            ->setCurPage(1);
 
             $return = self::productSelection($collection, $authentication);
 
@@ -165,9 +166,9 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if (!empty($configurableIds) && $configProd == 1) {
                 //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
                 list($_Scats,$Spictures) = self::prepareProduct($product);
-                $_Sattrs = self::prepareSkuAttributes($product);
                 //PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES PARA CADA UM
                 foreach ($configurableIds as $configurableId) {
+                    $_Sattrs = self::prepareSkuAttributes($product, $configurableId);
                     //CARREGA O PRODUTO CONFIGURAVEL DE ACORDO COM O ID RETORNADO
                     $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
                     //PREPARA AS INFORMACOES DO PRODUTO CONFIGURAVEL PARA O ENVIO
@@ -234,7 +235,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 $idProduct = $product->getId();
             }
 
-            $_skuAttrs = self::prepareSkuAttributes($product);
+            $_skuAttrs = self::prepareSkuAttributes($product, null);
             list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product,null,$pictures,$_skuAttrs,$loadedAttrs,$idProduct,$authentication,$environment);
 
             //VERIFICANDO ERROS DE PRODUTO
@@ -293,9 +294,9 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if (!empty($configurableIds) && $configProd == 1) {
                 //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
                 list($_Scats,$Spictures) = self::prepareProduct($product);
-                $_Sattrs = self::prepareSkuAttributes($product);
                 //PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES PARA CADA UM
                 foreach ($configurableIds as $configurableId) {
+                    $_Sattrs = self::prepareSkuAttributes($product, $configurableId);
                     //CARREGA O PRODUTO CONFIGURAVEL DE ACORDO COM O ID RETORNADO
                     $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
                     //PREPARA AS INFORMACOES DO PRODUTO CONFIGURAVEL PARA O ENVIO
@@ -361,7 +362,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 $idProduct = $product->getId();
             }
 
-            $_skuAttrs = self::prepareSkuAttributes($product);
+            $_skuAttrs = self::prepareSkuAttributes($product, null);
             list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product,null, $pictures,$_skuAttrs,$loadedAttrs,$idProduct,$authentication,$environment);
             //VERIFICANDO ERROS DE PRODUTO
             if ($errorId == $productId) {
@@ -427,12 +428,17 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         return $_attrs;
     }
 
-    public static function prepareSkuAttributes($product)
+    public static function prepareSkuAttributes($product, $configurableId = null)
     {
         $_attrs = array();
         $i = 0;
 
         $categoryIds = $product->getCategoryIds();
+
+        if (empty($categoryIds) && !empty($configurableId)) {
+            $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
+            $categoryIds = $configurableProduct->getCategoryIds();
+        }
 
         foreach ($categoryIds as $categoryId) {
             $categoryModel = Mage::getModel('integracommerce/sku')
@@ -443,7 +449,19 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             $attr_code = $categoryModel->getAttribute();
 
             if (!$attr_code || empty($attr_code)) {
-                continue;
+                $category = Mage::getModel('catalog/category')->load($categoryId);
+                $parentId = $category->getData('parent_id');
+
+                $categoryModel = Mage::getModel('integracommerce/sku')
+                    ->getCollection()
+                    ->addFieldToFilter('category',$parentId)
+                    ->getFirstItem();
+
+                $attr_code = $categoryModel->getAttribute();
+                
+                if (!$attr_code || empty($attr_code)) {
+                    continue;
+                }
             }
 
             $attribute = $product->getResource()->getAttribute($attr_code);

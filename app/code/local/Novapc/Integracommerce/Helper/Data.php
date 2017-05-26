@@ -129,7 +129,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $post_url = 'https://api.integracommerce.com.br/api/Product';
         } else {
             $post_url = 'https://in.integracommerce.com.br/api/Product';
-        } 
+        }
 
         if ($loadedAttrs['0'] !== 'not_selected') {
             $_nbmOrigin = $product->getResource()->getAttribute($loadedAttrs['0']);

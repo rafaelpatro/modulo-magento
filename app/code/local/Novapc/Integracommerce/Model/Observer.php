@@ -192,10 +192,9 @@ class Novapc_Integracommerce_Model_Observer
             if ($parentIds && !empty($parentIds)) {
                 //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
                 list($_Scats,$Spictures) = Novapc_Integracommerce_Helper_IntegrationData::prepareProduct($product);
-                $_Sattrs = Novapc_Integracommerce_Helper_IntegrationData::prepareSkuAttributes($product);
-
                 //PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES PARA CADA UM
                 foreach ($parentIds as $configurableId) {
+                    $_Sattrs = Novapc_Integracommerce_Helper_IntegrationData::prepareSkuAttributes($product, $configurableId);
                     //CARREGA O PRODUTO CONFIGURAVEL DE ACORDO COM O ID RETORNADO
                     $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
                     //PREPARA AS INFORMACOES DO PRODUTO CONFIGURAVEL PARA O ENVIO
@@ -274,7 +273,7 @@ class Novapc_Integracommerce_Model_Observer
                     $idProduct = $product->getId();
                 }
 
-                $_skuAttrs = Novapc_Integracommerce_Helper_IntegrationData::prepareSkuAttributes($product);
+                $_skuAttrs = Novapc_Integracommerce_Helper_IntegrationData::prepareSkuAttributes($product, null);
                 list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product,null,$pictures,$_skuAttrs,$preparedFields,$idProduct,$authentication,$environment);
                 //VERIFICANDO ERROS DE SKU
                 if ($errorId == $productId) {
