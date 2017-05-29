@@ -67,11 +67,12 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
         $this->_redirect('*/*/');
     }
 
-    protected function cleanAction()
+    protected function massDeleteAction()
     {
-        $collection = Mage::getModel('integracommerce/update')->getCollection();
+        $itensIds = (array) $this->getRequest()->getParam('integracommerce_report');
 
-        foreach ($collection as $item) {
+        foreach ($itensIds as $id) {
+            $item = Mage::getModel('integracommerce/update')->load($id, 'entity_id');
             $item->delete();
         }
 

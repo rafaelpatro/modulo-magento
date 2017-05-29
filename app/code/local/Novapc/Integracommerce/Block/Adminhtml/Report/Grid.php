@@ -41,7 +41,6 @@ class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_
 
     protected function _prepareColumns() 
     {
-
         $this->addColumn('product_id',
             array(
                 'header'=> Mage::helper('integracommerce')->__('Product Id'),
@@ -83,6 +82,20 @@ class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_
         ));                        
 
         return parent::_prepareColumns();
+    }
+
+    protected function _prepareMassaction()
+    {
+        $this->setMassactionIdField('product_id');
+        $this->getMassactionBlock()->setFormFieldName('integracommerce_report');
+
+        $this->getMassactionBlock()->addItem('delete', array(
+            'label'    => Mage::helper('integracommerce')->__('Excluir da Fila'),
+            'url'      => $this->getUrl('*/*/massDelete'),
+            'confirm'  => Mage::helper('integracommerce')->__('Tem certeza? Esta ação removerá os itens marcados da fila, inclusive caso ainda não tenha sido atualizado!')
+        ));
+
+        return $this;
     }
 
      protected function _addColumnFilterToCollection($column) {

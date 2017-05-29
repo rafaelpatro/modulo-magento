@@ -458,7 +458,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                     ->getFirstItem();
 
                 $attr_code = $categoryModel->getAttribute();
-                
+
                 if (!$attr_code || empty($attr_code)) {
                     continue;
                 }

@@ -4,14 +4,6 @@
     <tr>
         <td style="width:50%;"><h3 class="icon-head head-report"><?php echo Mage::helper('integracommerce')->__('Relatorio') ?></h3></td>
         <td class="a-right">
-
-            <?php $this->_addButton('delete_all', array(
-                'label'   => Mage::helper('integracommerce')->__('Limpar Fila'),
-                'onclick' => 'setLocation(\'' . $this->getUrl('integracommerce/adminhtml_report/clean') . '\')',
-                'class'   => 'delete'
-            ));
-            ?>
-
             <?php echo $this->getButtonsHtml() ?>
         </td>
     </tr>

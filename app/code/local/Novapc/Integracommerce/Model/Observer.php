@@ -50,7 +50,42 @@ class Novapc_Integracommerce_Model_Observer
         }
     
         return;
-    }         
+    }
+
+    public function massproductQueue(Varien_Event_Observer $event)
+    {
+        $attributesData = $event->getEvent()->getAttributesData();
+        $productIds     = $event->getEvent()->getProductIds();
+
+        foreach ($productIds as $id) {
+            $product = Mage::getModel('catalog/product')->load($id);
+
+            if (array_key_exists("integracommerce_active", $attributesData)) {
+                $activate = $attributesData['integracommerce_active'];
+            }
+
+            //VERIFICANDO SE O ATRIBUTO DE CONTROLE SERA ALTERADO PARA NAO
+            //POIS MESMO SENDO EVENTO AFTER NAO RETORNA APOS ATUALIZACAO
+            if (isset($activate) && $activate == 0) {
+                continue;
+            }
+
+            //VERIFICANDO SE O PRODUTO JA FOI SINCRONIZADO
+            if (empty($activate) && $product->getData('integracommerce_active') == 0) {
+                continue;
+            }
+
+            $insertQueue = Mage::getModel('integracommerce/update')->load($id, 'product_id');
+            $queueProductId = $insertQueue->getProductId();
+            if (!$queueProductId || empty($queueProductId)) {
+                $insertQueue = Mage::getModel('integracommerce/update');
+                $insertQueue->setProductId($id);
+                $insertQueue->save();
+            }
+        }
+
+        return;
+    }
 
     public function productQueue(Varien_Event_Observer $event)
     {
