@@ -473,7 +473,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 "IdOrder" => $order->getData('integracommerce_id'),
                 "OrderStatus" => "INVOICED",
                 "InvoicedNumber" => (empty($line[0]) ? "" : $line[0]),
-                "InvoicedLine" => (empty($line[1]) ? "" : $line[1]),
+                "InvoicedLine" => (!isset($line[1]) ? "" : $line[1]),
                 "InvoicedIssueDate" => (empty($line[2]) ? "" : $line[2]),
                 "InvoicedKey" => (empty($line[3]) ? "" : $line[3]),
                 "InvoicedDanfeXml" => (empty($line[4]) ? "" : $line[4])
@@ -607,10 +607,6 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                         $error_message = $error['Message'] . ', ';
                     }
                     Mage::log('Error: ' . $httpcode . 'Erro ao atualizar o pedido #' . $order->getData('integracommerce_id') . '. Motivo: ' . $decoded['Message'] . '. Erros: ' . $error_message, null, 'integracommerce_order_update_error.log');
-                }
-
-                $requestLog = Mage::getStoreConfig('integracommerce/general/request_log', Mage::app()->getStore());
-                if ($requestLog == 1) {
                     Mage::log('Requisição: ' . $jsonBody, null, 'integracommerce_order_request.log');
                 }
             }
