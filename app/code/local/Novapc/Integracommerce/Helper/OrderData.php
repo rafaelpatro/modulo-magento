@@ -9,11 +9,66 @@
  * @version      Release: 1.0.0 
  */
 
-//require_once('./app/Mage.php');
-Mage::app();
-
 class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Helper_Data
 {
+    public static function startOrders($requested, $orderModel)
+    {
+        $requestedHour = $orderModel->getRequestedHour();
+        $requestedDay = $orderModel->getRequestedDay();
+        $requestedWeek = $orderModel->getRequestedWeek();
+
+        $requestedHour = $requestedHour + $requested['Total'];
+        $requestedDay = $requestedDay + $requested['Total'];
+        $requestedWeek = $requestedWeek + $requested['Total'];
+
+        $orderModel->setStatus(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
+        $orderModel->setRequestedHour($requestedHour);
+        $orderModel->setRequestedDay($requestedDay);
+        $orderModel->setRequestedWeek($requestedWeek);
+        $orderModel->save();
+
+        foreach ($requested['Orders'] as $order) {
+            self::processingOrder($order);
+        }
+
+        return;
+    }
+
+    public static function processingOrder($order)
+    {
+        //VERIFICA SE CLIENTE JÁ EXISTE
+        if ($order['CustomerPfCpf']) {
+            $customer_doc = $order['CustomerPfCpf'];
+        } elseif ($order['CustomerPjCnpj']) {
+            $customer_doc = $order['CustomerPjCnpj'];
+        }
+
+        $customer = Mage::getModel('customer/customer')
+            ->getCollection()
+            ->addAttributeToSelect('*')
+            ->addAttributeToFilter('taxvat', $customer_doc)
+            ->getFirstItem();
+
+        $customerId = $customer->getId();
+        if ($customerId && !empty($customerId)) {
+            self::updateCustomer($customer,$order);
+        } else {
+            $customerId = self::createCustomer($order);
+        }
+
+        //VERIFIFA SE JA EXISTE PEDIDO NO MAGENTO COM O ID DA COMPRA INTEGRACOMMERCE
+        $existingOrder = Mage::getModel('sales/order')->load($order['IdOrder'], 'integracommerce_id');
+
+        $incrementId = $existingOrder->getIncrementId();
+        if ($incrementId && !empty($incrementId)) {
+            return;
+        } else {
+            $integraModel = self::integraOrder($order,$customerId, null);
+            self::createOrder($order,$customerId, $integraModel);
+        }
+
+        return;
+    }
 
 	public static function createCustomer($order)
 	{	
@@ -102,7 +157,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
 	}
 
-	public static function createOrder($order,$customerId)
+	public static function createOrder($order,$customerId, $integraModel = null)
 	{	
 		$customer = Mage::getModel('customer/customer')->load($customerId);	
 		//INICIA O MODEL DE PEDIDO DO MAGENTO                    
@@ -263,8 +318,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 			$transaction->save();
 
             $mageOrderId = $mage_order->getEntityId();
-		} catch (Exception $e){ 
-			Mage::log('Erro ao salvar Pedido. Mensagem:: '.$e->getMessage(), null, 'order_save_error_integracommerce.log');
+		} catch (Exception $e){
+            $integraModel->setMageError($e->getMessage());
+            $integraModel->save();
 			Mage::log($e->getTraceAsString());
 		}
 
@@ -274,7 +330,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             self::updateIntegraOrder($order['IdOrder'], $mageOrderId);
 
             $status = Mage::getStoreConfig('integracommerce/order_status/approved',Mage::app()->getStore());
-            if ($status && !empty($status)) {
+            if ($status !== 'keepstatus') {
                 $states = array();
                 $stateCollection = Mage::getResourceModel('sales/order_status_collection')->addStatusFilter($status);
                 foreach ($stateCollection as $state) {
@@ -289,15 +345,20 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 try {
                     $updateStatusOrder->save();
                 } catch (Exception $e) {
-                    Mage::log('Erro ao salvar Pedido. Mensagem:: '.$e->getMessage(), null, 'order_save_error_integracommerce.log');
+                    $integraModel->setMageError($e->getMessage());
+                    $integraModel->save();
                     Mage::log($e->getTraceAsString());
                 }
             }
         }
 
         $entityId = $mage_order->getEntityId();
-		return $entityId;
+        $integraModel->setMagentoOrderId($entityId);
+        $integraModel->setMagentoCustomerId($customer->getId());
+        $integraModel->setCustomerEmail($customer->getEmail());
+        $integraModel->save();
 
+		return $entityId;
 	}	
 
 	public static function updateIntegraOrder($orderId, $mageOrderId)
@@ -351,12 +412,17 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
 	}
 
-	public static function integraOrder($order,$customerId,$mageOrder)
+	public static function integraOrder($order,$customerId,$mageOrder = null)
 	{
         $customer = Mage::getModel('customer/customer')->load($customerId);
-		$integraOrder = Mage::getModel('integracommerce/order');
+		$integraOrder = Mage::getModel('integracommerce/order')->load($order['IdOrder'], 'integra_id');
 
-		$integraOrder->setIntegraId($order['IdOrder']);
+		$integraId = $integraOrder->getIntegraId();
+		if (!$integraId && empty($integraId)) {
+            $integraOrder = Mage::getModel('integracommerce/order');
+            $integraOrder->setIntegraId($order['IdOrder']);
+        }
+
 		$integraOrder->setMarketplaceId($order['IdOrderMarketplace']);
 		$integraOrder->setMarketplaceName($order['MarketplaceName']);
 		$integraOrder->setStoreName($order['StoreName']);
@@ -394,9 +460,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 		$integraOrder->setShipmentExceptionOccurrenceAt($order['ShipmentExceptionOccurrenceDate']);
 		$integraOrder->setDeliveredAt($order['DeliveredDate']);
 		$integraOrder->setProductsSkus($order['Products']);
-		$integraOrder->setMagentoOrderId($mageOrder);
-		$integraOrder->setMagentoCustomerId($customer->getId());
-		$integraOrder->setCustomerEmail($customer->getEmail());
+
+		if (isset($mageOrder)) {
+            $integraOrder->setMagentoOrderId($mageOrder);
+            $integraOrder->setMagentoCustomerId($customer->getId());
+            $integraOrder->setCustomerEmail($customer->getEmail());
+        }
+
 		$integraOrder->setInsertedAt($order['InsertedDate']);
 		$integraOrder->setPurchasedAt($order['PurchasedDate']);
 		$integraOrder->setApprovedAt($order['ApprovedDate']);
@@ -408,8 +478,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             Mage::log($e->getMessage(), null, 'integra_order_save_error_integracommerce.log');
         }		
 
-        return;
-
+        return $integraOrder;
 	}
 
     public static function updateOrder($order)
@@ -420,6 +489,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
         $invoiceStatus = Mage::getStoreConfig('integracommerce/order_status/nota_fiscal',Mage::app()->getStore());
         $ShippingStatus = Mage::getStoreConfig('integracommerce/order_status/dados_rastreio',Mage::app()->getStore());
+        $integraModel = Mage::getModel('integracommerce/order')->load($order->getData('integracommerce_id'), 'integra_id');
 
         if ($environment == 1) {
         	$post_url = 'https://api.integracommerce.com.br/api/Order';
@@ -457,7 +527,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             		$line[2] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
             	} else {
             		$ymd = DateTime::createFromFormat('d/m/Y H:i:s', $line[2]);
-            		$line[2] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+            		if ($ymd) {
+                        $line[2] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+                    } else {
+                       $integraModel->setMageError('Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro');
+                       $integraModel->save();
+                       return;
+                    }
             	}   
             }     
 
@@ -506,7 +582,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             		$line1[2] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
             	} else {
             		$ymd = DateTime::createFromFormat('d/m/Y H:i:s', $line1[2]);
-            		$line1[2] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+            		if ($ymd) {
+                        $line1[2] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+                    } else {
+                        $integraModel->setMageError('Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro');
+                        $integraModel->save();
+                        return;
+                    }
             	}
             }
 
@@ -516,7 +598,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             		$line1[3] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
             	} else {
             		$ymd = DateTime::createFromFormat('d/m/Y H:i:s', $line1[3]);
-            		$line1[3] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+            		if ($ymd) {
+                        $line1[3] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+                    } else {
+                        $integraModel->setMageError('Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro');
+                        $integraModel->save();
+                        return;
+                    }
             	}
             }                        
 
@@ -542,9 +630,15 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 $delivered_date = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
             } else {
                 $ymd = DateTime::createFromFormat('d/m/Y H:i:s', $comment->getData('comment'));
-                $delivered_date = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+                if ($ymd) {
+                    $delivered_date = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+                } else {
+                    $integraModel->setMageError('Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro');
+                    $integraModel->save();
+                    return;
+                }
             }
-            //$delivered_date = $ymd->format('Y-m-d\TH:i:s.\000\Z');
+
         	$new_status = "DELIVERED";
 
         	$body = array(
@@ -573,7 +667,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             		$line2[1] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
             	} else {
             		$ymd = DateTime::createFromFormat('d/m/Y H:i:s', $line2[1]);
-            		$line2[1] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+            		if ($ymd) {
+                        $line2[1] = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
+                    } else {
+                        $integraModel->setMageError('Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro');
+                        $integraModel->save();
+                        return;
+                    }
             	}    
             }
 
@@ -606,8 +706,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                     foreach ($decoded['Errors'] as $error) {
                         $error_message = $error['Message'] . ', ';
                     }
-                    Mage::log('Error: ' . $httpcode . 'Erro ao atualizar o pedido #' . $order->getData('integracommerce_id') . '. Motivo: ' . $decoded['Message'] . '. Erros: ' . $error_message, null, 'integracommerce_order_update_error.log');
-                    Mage::log('Requisição: ' . $jsonBody, null, 'integracommerce_order_request.log');
+
+                    $integraModel->setIntegraError('Motivo: ' . $decoded['Message'] . '. Erros: ' . $error_message);
+                    $integraModel->save();
                 }
             }
         }
@@ -617,13 +718,11 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
 	public static function viewOrder($id)
 	{
-
 		$integraOrder = Mage::getModel('integracommerce/order')->load($id,'integra_id');
 		$mageCustomer = Mage::getModel('customer/customer')->load($integraOrder->getMagentoCustomerId());
 		$mageOrder = Mage::getModel('sales/order')->load($integraOrder->getMagentoOrderId());
 
 		return array($integraOrder,$mageCustomer,$mageOrder);
-
 	}	
 
 }

@@ -7,9 +7,12 @@ class Novapc_Integracommerce_Model_System_Config_Source_Dropdown_Status
         $orderStatusCollection = Mage::getModel('sales/order_status')->getResourceCollection()->getData();
         $retornArray = array();
         $retornArray = array(
-            '-1'=>'Please Select..'
+            'keepstatus'=>'Por favor selecione...'
         );        
         foreach ($orderStatusCollection as $orderStatus) {
+            if ($orderStatus['status'] == 'pending') {
+                continue;
+            }
             $retornArray[] = array (
                 'value' => $orderStatus['status'], 'label' => $orderStatus['label']
             );

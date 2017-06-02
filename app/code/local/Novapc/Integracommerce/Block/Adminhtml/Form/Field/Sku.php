@@ -35,7 +35,7 @@ class Novapc_Integracommerce_Block_Adminhtml_Form_Field_Sku extends Mage_Adminht
                 $categories = Mage::getModel('catalog/category')
                     ->getCollection()
                     ->addFieldToFilter('level', array(
-                        'eq'     => '2'
+                        'gteq'     => '2'
                     ))
                     ->addAttributeToSelect('*');
 

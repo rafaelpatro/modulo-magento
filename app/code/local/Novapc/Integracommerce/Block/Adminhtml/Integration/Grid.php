@@ -53,7 +53,14 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration_Grid extends Mage_Admin
                 'header'=> Mage::helper('integracommerce')->__('Status'),
                 'index' => 'status',
                 'renderer' => 'Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status',
-        ));                
+        ));
+
+        $this->addColumn('available',
+            array(
+                'header'=> Mage::helper('integracommerce')->__('Disponível'),
+                'index' => 'available',
+                'renderer' => 'Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Available',
+            ));
 
         return parent::_prepareColumns();
     }

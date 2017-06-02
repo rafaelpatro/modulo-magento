@@ -9,61 +9,8 @@
  * @version      Release: 1.0.0 
  */
 
-//require_once('./app/Mage.php');
-Mage::app();
- 
 class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 {
-
-    public static function createQueue($identificator,$type,$jsonBody,$httpcode)
-    {
-        if ($httpcode == 204 || $httpcode == 201) {
-            $insertQueue = Mage::getModel('integracommerce/queue')
-                            ->getCollection()
-                            ->addFieldToFilter('identificator',$identificator . $type)
-                            ->getFirstItem(); 
-
-            if ($insertQueue->getData('identificator')) {
-                $insertQueue->setSentJson($jsonBody);
-                $insertQueue->setLastUpdate(date("Y-m-d h:i:sa"));
-                $insertQueue->setType($type);
-                $insertQueue->setDone(1);
-                $insertQueue->save();                
-            } else {
-                $insertQueue = Mage::getModel('integracommerce/queue');
-                $insertQueue->setIdentificator($identificator . $type);
-                $insertQueue->setSentJson($jsonBody);
-                $insertQueue->setLastUpdate(date("Y-m-d h:i:sa"));
-                $insertQueue->setType($type);
-                $insertQueue->setDone(1);
-                $insertQueue->save();                 
-            }
-            return;
-        } else {
-            $insertQueue = Mage::getModel('integracommerce/queue')
-                            ->getCollection()
-                            ->addFieldToFilter('identificator',$identificator . $type)
-                            ->getFirstItem(); 
-
-            if ($insertQueue->getData('identificator')) {
-                $insertQueue->setSentJson($jsonBody);
-                $insertQueue->setCreatedAt(date("Y-m-d h:i:sa"));
-                $insertQueue->setType($type);
-                $insertQueue->setDone(0);
-                $insertQueue->save();
-            } else {
-                $insertQueue = Mage::getModel('integracommerce/queue');
-                $insertQueue->setIdentificator($identificator . $type);
-                $insertQueue->setSentJson($jsonBody);
-                $insertQueue->setCreatedAt(date("Y-m-d h:i:sa"));
-                $insertQueue->setType($type);
-                $insertQueue->setDone(0);
-                $insertQueue->save();
-            }
-            return;
-        }
-    }
-
     public static function updateStock($product,$authentication,$environment)
     {   
         $exportType = Mage::getStoreConfig('integracommerce/general/export_type',Mage::app()->getStore());
@@ -394,7 +341,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $responseArray = json_decode($response, true);
 
-        return $responseArray['Orders'];
+        return $responseArray;
     } 
 
     public static function updatePrice($product,$authentication,$environment)

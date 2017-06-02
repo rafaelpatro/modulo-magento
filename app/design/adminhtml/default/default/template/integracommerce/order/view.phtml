@@ -96,7 +96,11 @@
                                             echo Mage::helper('integracommerce')->__($integraOrder->shipping_tracking_url);
                                         }
                                     ?></td>
-                                </tr>                                                                                
+                                </tr>
+                                <tr>
+                                    <td class="label"><label><strong><?php echo Mage::helper('integracommerce')->__("Erros:"); ?></strong></label></td>
+                                    <td class="value"><textarea id="error" name="error" class="textarea required" rows="2" cols="15" style="width: 333px; height: 115px;" ><?php echo $integraOrder->integra_error; ?></textarea><td class="value">
+                                </tr>
                              </tbody>
                          </table>
                     </div>
@@ -134,7 +138,11 @@
                                         <?php foreach ($product_collection as $key => $_product): ?>
                                         <td class="value"><?php echo $_product->name;?></td>
                                         <?php endforeach; ?>
-                                    </tr>                                                                                                                                          
+                                    </tr>
+                                    <tr>
+                                        <td class="label"><label><strong><?php echo Mage::helper('integracommerce')->__("Erros:"); ?></strong></label></td>
+                                        <td class="value"><textarea id="error" name="error" class="textarea required" rows="2" cols="15" style="width: 333px; height: 115px;" ><?php echo $integraOrder->mage_error; ?></textarea><td class="value">
+                                    </tr>
                                  </tbody>
                              </table>
                         </div>

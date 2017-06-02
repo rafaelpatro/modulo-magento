@@ -44,8 +44,6 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
     {
     	$collection = Mage::getModel('integracommerce/order')->getCollection();
 
-        $collection->getSelect()->join( array('mage_order'=> sales_flat_order), 'mage_order.entity_id = main_table.magento_order_id', array('mage_order.increment_id'));
-
 		$this->setCollection($collection);
                   
         parent::_prepareCollection();
@@ -69,10 +67,11 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
             ),
         ));
 
-        $this->addColumn('increment_id',
+        $this->addColumn('magento_order_id',
             array(
                 'header'=> Mage::helper('integracommerce')->__('Código Magento'),
-                'index' => 'increment_id',
+                'index' => 'magento_order_id',
+                'renderer' => 'Novapc_Integracommerce_Block_Adminhtml_Order_Renderer_Mageid',
             ));
 
         $this->addColumn('inserted_at',
@@ -148,7 +147,12 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
              'label'    => Mage::helper('integracommerce')->__('Excluir Pedido'),
              'url'      => $this->getUrl('*/*/massDelete'),
              'confirm'  => Mage::helper('customer')->__('Are you sure?')
-        ));        
+        ));
+
+        $this->getMassactionBlock()->addItem('search', array(
+            'label'    => Mage::helper('integracommerce')->__('Buscar Pedido'),
+            'url'      => $this->getUrl('*/*/massSearch')
+        ));
 
         return $this;
     }                

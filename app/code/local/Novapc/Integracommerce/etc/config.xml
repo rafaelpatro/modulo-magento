@@ -13,7 +13,7 @@
 <config>
 	<modules>
 		<Novapc_Integracommerce>
-			<version>1.9.8</version>
+			<version>2.0.0</version>
 		</Novapc_Integracommerce>
 	</modules>
     <frontend>
@@ -46,7 +46,7 @@
                         <table>npcintegra_attributes</table>
                     </attributes>    
                     <queue>
-                        <table>npcintegra_queue</table>
+                        <table>npcintegra_order_queue</table>
                     </queue>
                     <update>
                         <table>npcintegra_product_queue</table>
@@ -184,10 +184,6 @@
                 <schedule><cron_expr>*/10 * * * *</cron_expr></schedule>
                 <run><model>integracommerce/observer::getOrders</model></run>
             </integracommerce_order>
-            <integracommerce_order_queue>
-                <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
-                <run><model>integracommerce/observer::orderUpdate</model></run>
-            </integracommerce_order_queue>
             <integracommerce_product_queue>
                 <schedule><cron_expr>*/5 * * * *</cron_expr></schedule>
                 <run><model>integracommerce/observer::productUpdate</model></run>
