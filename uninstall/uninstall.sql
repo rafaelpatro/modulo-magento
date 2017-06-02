@@ -1,7 +1,7 @@
 DROP TABLE npcintegra_integration;
 DROP TABLE npcintegra_order;
 DROP TABLE npcintegra_attributes;
-DROP TABLE npcintegra_queue;
+DROP TABLE npcintegra_order_queue;
 DROP TABLE npcintegra_product_queue;
 DROP TABLE npcintegra_sku_attributes;
 
