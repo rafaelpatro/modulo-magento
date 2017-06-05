@@ -57,6 +57,11 @@ class Novapc_Integracommerce_Model_Observer
         $attributesData = $event->getEvent()->getAttributesData();
         $productIds     = $event->getEvent()->getProductIds();
 
+        $count = count($attributesData);
+        if ($count == 1 && array_key_exists("integracommerce_active", $attributesData)) {
+            return;
+        }
+
         foreach ($productIds as $id) {
             $product = Mage::getModel('catalog/product')->load($id);
 

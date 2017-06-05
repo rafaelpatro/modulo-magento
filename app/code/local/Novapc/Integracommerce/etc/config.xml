@@ -58,7 +58,7 @@
             </integracommerce_mysql4>
         </models>
 		<events>
-            <catalog_product_attribute_update_after>
+            <catalog_product_attribute_update_before>
                 <observers>
                     <Novapc_Integracommerce>
                         <class>Novapc_Integracommerce_Model_Observer</class>
@@ -66,7 +66,7 @@
                         <type>singleton</type>
                     </Novapc_Integracommerce>
                 </observers>
-            </catalog_product_attribute_update_after>
+            </catalog_product_attribute_update_before>
             <catalog_product_save_after>
                 <observers>
                     <Novapc_Integracommerce>

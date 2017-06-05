@@ -166,4 +166,9 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $this->getLayout()->createBlock('integracommerce/adminhtml_integration_grid')->toHtml()
         );
     }
+
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('integracommerce/integration');
+    }
 }

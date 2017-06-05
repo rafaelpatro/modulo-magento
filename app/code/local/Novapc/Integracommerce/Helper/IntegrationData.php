@@ -39,8 +39,6 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             $cat_id = $category->getId();
             $cat_name = $category->getName();
 
-            Mage::log($cat_name, null, 'catname.log');
-
             $result = self::postCategory($cat_id, $cat_name, $_parent_id, $authentication, $environment);
 
             if ($result == 201 || $result == 204) {
@@ -161,6 +159,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if (!empty($configurableIds) && $configProd == 1) {
                 //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
                 list($_Scats,$Spictures) = self::prepareProduct($product);
+                $idSimple = $product->getId();
                 //PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES PARA CADA UM
                 foreach ($configurableIds as $configurableId) {
                     $_Sattrs = self::prepareSkuAttributes($product, $configurableId);
@@ -200,7 +199,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                     if ($errorId == $productId) {
                         Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId,0, 'sku');
                     } else {
-                        Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'sku');
+                        Novapc_Integracommerce_Helper_Data::checkError(null, null, $idSimple, 1, 'sku');
                     }
 
                     $requested++;

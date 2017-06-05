@@ -163,4 +163,9 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
             $this->getLayout()->createBlock('integracommerce/adminhtml_order_grid')->toHtml()
         );
     }
+
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('integracommerce/orders');
+    }
 }

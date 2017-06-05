@@ -79,4 +79,8 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
         $this->_redirect('*/*/');
     }
 
+    protected function _isAllowed()
+    {
+        return Mage::getSingleton('admin/session')->isAllowed('integracommerce/report');
+    }
 }

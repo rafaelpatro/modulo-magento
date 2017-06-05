@@ -309,11 +309,13 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             return array($jsonBody, $response, $product->getId());
         }
 
-        Mage::getSingleton('catalog/product_action')->updateAttributes(
-            array($product->getId()),               // Product IDs to update
-            array('integracommerce_active' => 1), // Key/value pairs of attributes and their values
-            0                                   // Store ID
-        );
+        if ($product->getData('integracommerce_active') == 0) {
+            Mage::getSingleton('catalog/product_action')->updateAttributes(
+                array($product->getId()),               // Product IDs to update
+                array('integracommerce_active' => 1), // Key/value pairs of attributes and their values
+                0                                   // Store ID
+            );
+        }
 
         return;
     } 
