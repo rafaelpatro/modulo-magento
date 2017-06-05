@@ -146,7 +146,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                     $queueItem = Mage::getModel('integracommerce/update');
                     $queueItem->setProductId($product->getId());
                 }
-                $queueItem->setProductBody('Erro na Sincronização');
+                $queueItem->setProductBody("Atributo: Altura(". $loadedAttrs['4'] ."): ". $height ."\nAtributo: Largura(".$loadedAttrs['5']  ."): ". $width ."\nAtributo: Comprimento(". $loadedAttrs['6'] ."): ". $length ."\nAtributo: Peso(". $loadedAttrs['7'] ."): ". $weight);
                 $queueItem->setProductError('O produto não possui as informações de Altura, Largura, Comprimento ou Peso');
                 $queueItem->save();
                 continue;
