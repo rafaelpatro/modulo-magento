@@ -14,10 +14,9 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
     public static function integrateCategory($authentication, $requested)
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
-        $configValue = Mage::getStoreConfig('catalog/frontend/flat_catalog_category');
+        Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
 
 		$categories = Mage::getModel('catalog/category')
-                        ->setStoreId(0)
     					->getCollection()
                         ->addFieldToFilter('integracommerce_active', array('neq' => 1))
                         ->setOrder('level', 'ASC')
@@ -129,10 +128,6 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         foreach ($collection as $product) {
             $productType = $product->getTypeId();
 
-            if ($productType == 'configurable') {
-                continue;
-            }
-
             $height = $product->getData($loadedAttrs['4']);
             $width = $product->getData($loadedAttrs['5']);
             $length = $product->getData($loadedAttrs['6']);
@@ -223,6 +218,10 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId,0, 'product');
             } else {
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
+            }
+
+            if ($productType == 'configurable') {
+                continue;
             }
 
             $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
