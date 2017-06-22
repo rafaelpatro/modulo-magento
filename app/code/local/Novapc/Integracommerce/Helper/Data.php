@@ -191,6 +191,15 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         if ($httpcode !== 204 && $httpcode !== 201) {
             return array($jsonBody, $response, $product->getId());
         }
+
+        $productType = $product->getTypeId();
+        if ($product->getData('integracommerce_active') == 0 && $productType == 'configurable') {
+            Mage::getSingleton('catalog/product_action')->updateAttributes(
+                array($product->getId()),
+                array('integracommerce_active' => 1),
+                0
+            );
+        }
         
         return;
 
@@ -261,6 +270,13 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $idSku = $product->getId();
         }
 
+        $productStatus = $product->getStatus();
+        if ($productStatus == 2) {
+            $skuStatus = false;
+        } else {
+            $skuStatus = true;
+        }
+
         $body = array(
             "idSku" => $idSku,
             "IdSkuErp" => $product->getData('sku'),
@@ -277,7 +293,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "CodeNbm" => ($loadedAttrs['1'] == 'not_selected' ? "" : $product->getData($loadedAttrs['1'])),
             "Variation" => "",
             "StockQuantity" => $stockQuantity,
-            "Status" => true,
+            "Status" => $skuStatus,
             "Price" => array(
                 "ListPrice" => ($normalPrice < $specialPrice ? $specialPrice : $normalPrice),
                 "SalePrice" => $specialPrice
@@ -311,9 +327,9 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         if ($product->getData('integracommerce_active') == 0) {
             Mage::getSingleton('catalog/product_action')->updateAttributes(
-                array($product->getId()),               // Product IDs to update
-                array('integracommerce_active' => 1), // Key/value pairs of attributes and their values
-                0                                   // Store ID
+                array($product->getId()),               
+                array('integracommerce_active' => 1), 
+                0                                   
             );
         }
 
