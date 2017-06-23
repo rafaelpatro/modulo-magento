@@ -107,7 +107,8 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setRegion($region->getName())
             ->setRegionId($region->getId())
             ->setTelephone($order['TelephoneMainNumber'])
-            ->setStreet(array($order['DeliveryAddressStreet'], $order['DeliveryAddressNumber'], (empty($order['DeliveryAddressReference']) ? 'Não Informado' : $order['DeliveryAddressReference']) , $order['DeliveryAddressNeighborhood']))
+            ->setFax($order['TelephoneSecundaryNumber'])
+            ->setStreet(array($order['DeliveryAddressStreet'], $order['DeliveryAddressNumber'], (empty($order['DeliveryAddressAdditionalInfo']) ? 'Não Informado' : $order['DeliveryAddressAdditionalInfo']) , $order['DeliveryAddressNeighborhood']))
             ->setIsDefaultBilling('1')
             ->setIsDefaultShipping('1')
             ->setSaveInAddressBook('1');
@@ -141,7 +142,8 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setRegion($region->getName())
             ->setRegionId($region->getId())
             ->setTelephone($order['TelephoneMainNumber'])
-            ->setStreet(array($order['DeliveryAddressStreet'], $order['DeliveryAddressNumber'], (empty($order['DeliveryAddressReference']) ? 'Não Informado' : $order['DeliveryAddressReference']), $order['DeliveryAddressNeighborhood']))
+            ->setFax($order['TelephoneSecundaryNumber'])
+            ->setStreet(array($order['DeliveryAddressStreet'], $order['DeliveryAddressNumber'], (empty($order['DeliveryAddressAdditionalInfo']) ? 'Não Informado' : $order['DeliveryAddressAdditionalInfo']), $order['DeliveryAddressNeighborhood']))
             ->setIsDefaultBilling('1')
             ->setIsDefaultShipping('1')
             ->setSaveInAddressBook('1');
@@ -214,7 +216,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 				->setRegion($billing->getRegion())
 				->setRegion_id($billing->getRegionId())
 				->setPostcode($billing->getPostcode())
-				->setTelephone($billing->getTelephone());
+				->setTelephone($billing->getTelephone())
+                ->setFax($billing->getFax())
+                ->setVatId($customer->getData('taxvat'));
 		$mage_order->setBillingAddress($billingAddress);
 				 
 		$shipping = $customer->getDefaultShippingAddress();
@@ -233,7 +237,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 			->setRegion($shipping->getRegion())
 			->setRegion_id($shipping->getRegionId())
 			->setPostcode($shipping->getPostcode())
-			->setTelephone($shipping->getTelephone());
+			->setTelephone($shipping->getTelephone())
+            ->setFax($shipping->getFax())
+            ->setVatId($customer->getData('taxvat'));
 
 		//INSERINDO METODO DE ENTREGA
 		if (empty($order['TotalFreight'])) {
@@ -264,8 +270,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 $_product = Mage::getModel('catalog/product')->loadByAttribute('entity_id',$product['IdSku']);
             }
 
-            $productId = $_product->getId();
-	        if (!$productId || empty($productId)) {
+	        if (empty($_product)) {
 	        	continue;
 	        }
 
@@ -412,74 +417,60 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
 	}
 
-	public static function integraOrder($order,$customerId,$mageOrder = null)
-	{
+    public static function integraOrder($order,$customerId,$mageOrder = null)
+    {
         $customer = Mage::getModel('customer/customer')->load($customerId);
-		$integraOrder = Mage::getModel('integracommerce/order')->load($order['IdOrder'], 'integra_id');
+        $integraOrder = Mage::getModel('integracommerce/order')->load($order['IdOrder'], 'integra_id');
 
-		$integraId = $integraOrder->getIntegraId();
-		if (!$integraId && empty($integraId)) {
+        $integraId = $integraOrder->getIntegraId();
+        if (empty($integraId)) {
             $integraOrder = Mage::getModel('integracommerce/order');
             $integraOrder->setIntegraId($order['IdOrder']);
         }
 
-		$integraOrder->setMarketplaceId($order['IdOrderMarketplace']);
-		$integraOrder->setMarketplaceName($order['MarketplaceName']);
-		$integraOrder->setStoreName($order['StoreName']);
-		$integraOrder->setUpdatedMarketplaceStatus($order['UpdatedMarketplaceStatus']);
-		$integraOrder->setEstimatedDeliveryDate($order['EstimatedDeliveryDate']);
-		$integraOrder->setCustomerPfCpf($order['CustomerPfCpf']);
-		$integraOrder->setCustomerPfName($order['CustomerPfName']);
-		$integraOrder->setCustomerPjCnpj($order['CustomerPjCnpj']);
-		$integraOrder->setCustomerPjCorporateName($order['CustomerPjCorporatename']);
-		$integraOrder->setDeliveryStreet($order['DeliveryAddressStreet']);
-		$integraOrder->setDeliveryAdditionalInfo($order['DeliveryAddressAdditionalInfo']);
-		$integraOrder->setDeliveryNeighborhood($order['DeliveryAddressNeighborhood']);
-		$integraOrder->setDeliveryCity($order['DeliveryAddressCity']);
-		$integraOrder->setDeliveryReference($order['DeliveryAddressReference']);
-		$integraOrder->setDeliveryState($order['DeliveryAddressState']);
-		$integraOrder->setDeliveryNumber($order['DeliveryAddressNumber']);
-		$integraOrder->setTelephoneMain($order['TelephoneMainNumber']);
-		$integraOrder->setTelephoneSecondary($order['TelephoneSecondaryNumber']);
-		$integraOrder->setTelephoneBusiness($order['TelephoneBusinessNumber']);
-		$integraOrder->setTotalAmount($order['TotalAmount']);
-		$integraOrder->setTotalFreight($order['TotalFreight']);
-		$integraOrder->setTotalDiscount($order['TotalDiscount']);
-		$integraOrder->setCustomerBirthday($order['CustomerBirthDate']);
-		$integraOrder->setOrderStatus($order['OrderStatus']);
-		$integraOrder->setInvoicedNumber($order['InvoicedNumber']);
-		$integraOrder->setInvoicedLine($order['InvoicedLine']);
-		$integraOrder->setInvoicedKey($order['InvoicedKey']);
-		$integraOrder->setInvoicedDanfeXml($order['InvoicedDanfeXml']);
-		$integraOrder->setShippingTrackingUrl($order['ShippedTrackingUrl']);
-		$integraOrder->setShippingTrackingProtocol($order['ShippedTrackingProtocol']);
-		$integraOrder->setShippedEstimatedDelivery($order['ShippedEstimatedDelivery']);
-		$integraOrder->setShippedCarrierAt($order['ShippedCarrierDate']);
-		$integraOrder->setShippedCarrierName($order['ShippedCarrierName']);
-		$integraOrder->setShipmentExceptionObservation($order['ShipmentExceptionObservation']);
-		$integraOrder->setShipmentExceptionOccurrenceAt($order['ShipmentExceptionOccurrenceDate']);
-		$integraOrder->setDeliveredAt($order['DeliveredDate']);
-		$integraOrder->setProductsSkus($order['Products']);
+        $integraOrder->setMarketplaceId($order['IdOrderMarketplace']);
+        $integraOrder->setMarketplaceName($order['MarketplaceName']);
+        $integraOrder->setStoreName($order['StoreName']);
 
-		if (isset($mageOrder)) {
+        $integraOrder->setCustomerPfCpf((empty($order['CustomerPfCpf']) ? "" : $order['CustomerPfCpf']));
+        $integraOrder->setCustomerPfName((empty($order['CustomerPfName']) ? "" : $order['CustomerPfName']));
+        $integraOrder->setCustomerPjCnpj((empty($order['CustomerPjCnpj']) ? "" : $order['CustomerPjCnpj']));
+        $integraOrder->setCustomerPjCorporateName((empty($order['CustomerPjCorporatename']) ? "" : $order['CustomerPjCorporatename']));
+
+        $integraOrder->setDeliveryStreet($order['DeliveryAddressStreet']);
+        $integraOrder->setDeliveryAdditionalInfo($order['DeliveryAddressAdditionalInfo']);
+        $integraOrder->setDeliveryNeighborhood($order['DeliveryAddressNeighborhood']);
+        $integraOrder->setDeliveryCity($order['DeliveryAddressCity']);
+        $integraOrder->setDeliveryReference($order['DeliveryAddressReference']);
+        $integraOrder->setDeliveryState($order['DeliveryAddressState']);
+        $integraOrder->setDeliveryNumber($order['DeliveryAddressNumber']);
+        $integraOrder->setTelephoneMain($order['TelephoneMainNumber']);
+        $integraOrder->setTelephoneSecondary($order['TelephoneSecundaryNumber']);
+        $integraOrder->setTelephoneBusiness($order['TelephoneBusinessNumber']);
+        $integraOrder->setTotalAmount($order['TotalAmount']);
+        $integraOrder->setTotalFreight($order['TotalFreight']);
+        $integraOrder->setTotalDiscount($order['TotalDiscount']);
+        $integraOrder->setOrderStatus($order['OrderStatus']);
+
+        if (isset($mageOrder)) {
             $integraOrder->setMagentoOrderId($mageOrder);
             $integraOrder->setMagentoCustomerId($customer->getId());
             $integraOrder->setCustomerEmail($customer->getEmail());
         }
 
-		$integraOrder->setInsertedAt($order['InsertedDate']);
-		$integraOrder->setPurchasedAt($order['PurchasedDate']);
-		$integraOrder->setApprovedAt($order['ApprovedDate']);
-		$integraOrder->setUpdatedAt($order['UpdatedDate']);
+        $integraOrder->setInsertedAt($order['InsertedDate']);
+        $integraOrder->setPurchasedAt($order['PurchasedDate']);
+        $integraOrder->setApprovedAt($order['ApprovedDate']);
+        $integraOrder->setUpdatedAt($order['UpdatedDate']);
 
         try {
             $integraOrder->save();
         } catch (Exception $e) {
             Mage::log($e->getMessage(), null, 'integra_order_save_error_integracommerce.log');
-        }		
+        }       
 
         return $integraOrder;
-	}
+    }
 
     public static function updateOrder($order)
     {
