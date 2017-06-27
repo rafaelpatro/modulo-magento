@@ -1,34 +1,29 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       NovaPC
- * @version      Release: 1.0.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminhtml_Controller_Action
 {
-
-	
     public function indexAction() 
     {
-        //$this->_initAction();
-        //$this->renderLayout();
         $this->loadLayout();
         $this->_setActiveMenu('integracommerce');
         $this->renderLayout();
-    
     }
 
     public function massCategoryAction()
     {
-        $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-        $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-        $authentication = base64_encode($api_user . ':' . $api_password);
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
         $categoryModel = Mage::getModel('integracommerce/integration')->load('Category', 'integra_model');
 
         $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($categoryModel, 'post');
@@ -42,19 +37,29 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $alreadyRequested = $categoryModel->getRequestedHour();
             $requestedDay = $categoryModel->getRequestedDay();
             $requestedWeek = $categoryModel->getRequestedWeek();
-            $requested = Novapc_Integracommerce_Helper_IntegrationData::integrateCategory($authentication, $alreadyRequested);
+            $requestedInitial = $categoryModel->getInitialHour();
+            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::integrateCategory($alreadyRequested);
 
-            if ($alreadyRequested == $requested) {
+            if ($alreadyRequested == $requestedHour) {
                 $requested = 0;
+                $requestedHour = 0;
+            } else {
+                $requested = $requestedHour - $alreadyRequested;
             }
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
+            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
 
-            $categoryModel->setStatus(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
-            $categoryModel->setRequestedHour($requested);
+            $categoryModel->setStatus($requestTime);
+            $categoryModel->setRequestedHour($requestedHour);
             $categoryModel->setRequestedDay($requestedDay);
             $categoryModel->setRequestedWeek($requestedWeek);
+
+            if (empty($requestedInitial)) {
+                $categoryModel->setInitialHour($requestTime);
+            }
+
             $categoryModel->save();
 
             Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__("Synchronization completed."));
@@ -65,10 +70,6 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
     public function massInsertAction()
     {
-        $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-        $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-        $authentication = base64_encode($api_user . ':' . $api_password);
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Insert', 'integra_model');
 
         $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, 'post');
@@ -82,19 +83,29 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $alreadyRequested = $productModel->getRequestedHour();
             $requestedDay = $productModel->getRequestedDay();
             $requestedWeek = $productModel->getRequestedWeek();
-            $requested = Novapc_Integracommerce_Helper_IntegrationData::integrateProduct($authentication, $alreadyRequested);
+            $requestedInitial = $productModel->getInitialHour();
+            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::integrateProduct($alreadyRequested);
 
-            if ($alreadyRequested == $requested) {
+            if ($alreadyRequested == $requestedHour) {
                 $requested = 0;
+                $requestedHour = 0;
+            } else {
+                $requested = $requestedHour - $alreadyRequested;
             }
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
+            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
 
-            $productModel->setStatus(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
-            $productModel->setRequestedHour($requested);
+            $productModel->setStatus($requestTime);
+            $productModel->setRequestedHour($requestedHour);
             $productModel->setRequestedDay($requestedDay);
             $productModel->setRequestedWeek($requestedWeek);
+
+            if (empty($requestedInitial)) {
+                $productModel->setInitialHour($requestTime);
+            }
+
             $productModel->save();
 
             $queueCollection = Mage::getModel('integracommerce/update')->getCollection();
@@ -112,10 +123,6 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
     public function massUpdateAction()
     {
-        $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-        $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-        $authentication = base64_encode($api_user . ':' . $api_password);
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Update', 'integra_model');
 
         $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, 'put');
@@ -129,19 +136,29 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $alreadyRequested = $productModel->getRequestedHour();
             $requestedDay = $productModel->getRequestedDay();
             $requestedWeek = $productModel->getRequestedWeek();
-            $requested = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($authentication, $alreadyRequested);
+            $requestedInitial = $productModel->getInitialHour();
+            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested);
 
-            if ($alreadyRequested == $requested) {
+            if ($alreadyRequested == $requestedHour) {
                 $requested = 0;
+                $requestedHour = 0;
+            } else {
+                $requested = $requestedHour - $alreadyRequested;
             }
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
+            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
 
-            $productModel->setStatus(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
-            $productModel->setRequestedHour($requested);
+            $productModel->setStatus($requestTime);
+            $productModel->setRequestedHour($requestedHour);
             $productModel->setRequestedDay($requestedDay);
             $productModel->setRequestedWeek($requestedWeek);
+
+            if (empty($requestedInitial)) {
+                $productModel->setInitialHour($requestTime);
+            }
+
             $productModel->save();
 
             $queueCollection = Mage::getModel('integracommerce/update')->getCollection();
@@ -160,7 +177,8 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
     /**
      * Product grid for AJAX request
      */
-    public function gridAction() {
+    public function gridAction()
+    {
         $this->loadLayout();
         $this->getResponse()->setBody(
             $this->getLayout()->createBlock('integracommerce/adminhtml_integration_grid')->toHtml()

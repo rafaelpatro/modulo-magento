@@ -1,26 +1,30 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce 
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       Novapc
- * @version      Release: 1.0.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abstract
 {
-    public static function integrateCategory($authentication, $requested)
+    public static function integrateCategory($requested)
     {
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
+        //FORCA O AMBIENTE COMO ADMIN DEVIDO A TABELAS FLAT COM MULTISTORE
         Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
 
-		$categories = Mage::getModel('catalog/category')
-    					->getCollection()
+        $categories = Mage::getModel('catalog/category')
+                        ->getCollection()
                         ->addFieldToFilter('integracommerce_active', array('neq' => 1))
                         ->setOrder('level', 'ASC')
-    					->addAttributeToSelect('*');
+                        ->addAttributeToSelect('*');
 
         foreach ($categories as $category) {
             $catLevel = $category->getData('level');
@@ -30,15 +34,15 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             }
 
             if ($catLevel == 2) {
-                $_parent_id = "";
+                $parentId = "";
             } else {
-                $_parent_id = $category->getData('parent_id');
+                $parentId = $category->getData('parent_id');
             }
 
-            $cat_id = $category->getId();
-            $cat_name = $category->getName();
+            $catId = $category->getId();
+            $catName = $category->getName();
 
-            $result = self::postCategory($cat_id, $cat_name, $_parent_id, $authentication, $environment);
+            $result = self::postCategory($catId, $catName, $parentId, $environment);
 
             if ($result == 201 || $result == 204) {
                 $attrCode = 'integracommerce_active';
@@ -50,181 +54,122 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if ($requested == 600) {
                 break;
             }
+
             sleep(2);
         }
 
         return $requested;
-	} 
+    }
 
-    public static function postCategory($cat_id, $cat_name, $_parent_id, $authentication, $environment)
+    public static function postCategory($catId, $catName, $parentId, $environment)
     {
         $body = array();
-        array_push($body,
-            array(
-                "Id" => $cat_id,
-                "Name" => $cat_name,
-                "ParentId" => $_parent_id
+        array_push(
+            $body, array(
+                "Id" => $catId,
+                "Name" => $catName,
+                "ParentId" => $parentId
             )
         );
 
         $jsonBody = json_encode($body);
 
-        if ($environment == 1) {
-            $post_url = 'https://api.integracommerce.com.br/api/Category';
-        } else {
-            $post_url = 'https://in.integracommerce.com.br/api/Category';
-        }
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/Category';
 
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL, $post_url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Authorization: Basic " . $authentication . ""));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $jsonBody);
+        $return = Novapc_Integracommerce_Helper_Data::callCurl("POST", $url, $jsonBody);
 
-        $_curl_exe = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close ($ch);
-
-        return $httpcode;
-
+        return $return['httpCode'];
     }
 
-    public static function integrateProduct($authentication, $requested)
+    public static function integrateProduct($requested)
     {
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type',Mage::app()->getStore());
+        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if ($exportType == 1) {
             $collection = Mage::getModel('catalog/product')->getCollection()
-                            ->addFieldToFilter('integracommerce_sync',1)
-                            ->addFieldToFilter('integracommerce_active',0)
+                            ->addFieldToFilter('integracommerce_sync', 1)
+                            ->addFieldToFilter('integracommerce_active', 0)
                             ->addAttributeToSelect('*');
 
-            $return = self::productSelection($collection, $authentication, $requested);
-
+            $return = self::productSelection($collection, $requested);
         } elseif ($exportType == 2) {
             $collection = Mage::getModel('catalog/product')->getCollection()
-                            ->addFieldToFilter('integracommerce_active',0)
+                            ->addFieldToFilter('integracommerce_active', 0)
                             ->addAttributeToSelect('*');
 
-            $return = self::productSelection($collection, $authentication, $requested);
+            $return = self::productSelection($collection, $requested);
         }
 
         return $return;
     }
 
-    public static function productSelection($collection, $authentication, $requested)
+    public static function productSelection($collection, $requested)
     {
-        $_attributes = Mage::getStoreConfig('integracommerce/general/attributes',Mage::app()->getStore());
-        $attributes = explode(',', $_attributes);
-
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());       
-
-        $attrCollection = Mage::getModel('integracommerce/attributes')->load(1,'entity_id');  
-
+        $initialAttributes = Mage::getStoreConfig('integracommerce/general/attributes', Mage::app()->getStore());
+        $attributes = explode(',', $initialAttributes);
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
+        $attrCollection = Mage::getModel('integracommerce/attributes')->load(1, 'entity_id');
         $loadedAttrs = self::loadAttr($attrCollection);
-
-        $configProd = Mage::getStoreConfig('integracommerce/general/configprod',Mage::app()->getStore());
+        $configProd = Mage::getStoreConfig('integracommerce/general/configprod', Mage::app()->getStore());
 
         foreach ($collection as $product) {
             $productType = $product->getTypeId();
-
             $height = $product->getData($loadedAttrs['4']);
             $width = $product->getData($loadedAttrs['5']);
             $length = $product->getData($loadedAttrs['6']);
             $weight = $product->getData($loadedAttrs['7']);
 
-            if (empty($height) || empty($width) || empty($length) || empty($weight)) {
-                $queueItem = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-                if (!$queueItem->getProductId()) {
-                    $queueItem = Mage::getModel('integracommerce/update');
-                    $queueItem->setProductId($product->getId());
-                }
-                $queueItem->setProductBody("Atributo: Altura(". $loadedAttrs['4'] ."): ". $height ."\nAtributo: Largura(".$loadedAttrs['5']  ."): ". $width ."\nAtributo: Comprimento(". $loadedAttrs['6'] ."): ". $length ."\nAtributo: Peso(". $loadedAttrs['7'] ."): ". $weight);
-                $queueItem->setProductError('O produto não possui as informações de Altura, Largura, Comprimento ou Peso');
-                $queueItem->save();
-                continue;
-            }
+            if ($productType !== 'configurable') {
+                if (empty($height) || empty($width) || empty($length) || empty($weight)) {
+                    $queueItem = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
+                    if (!$queueItem->getProductId()) {
+                        $queueItem = Mage::getModel('integracommerce/update');
+                        $queueItem->setProductId($product->getId());
+                    }
 
-            if ($product->getTypeId() == 'simple') {
-                $configurableIds = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product->getId());
+                    $queueItem->setProductBody(
+                        "Atributo: Altura(" . $loadedAttrs['4'] . "): " . $height . "
+                        \nAtributo: Largura(" . $loadedAttrs['5'] . "): " . $width . "
+                        \nAtributo: Comprimento(" . $loadedAttrs['6'] . "): " . $length . "
+                        \nAtributo: Peso(" . $loadedAttrs['7'] . "): " . $weight
+                    );
+                    $queueItem->setProductError(
+                        'O produto não possui as informações de Altura, Largura, Comprimento ou Peso'
+                    );
+                    $queueItem->save();
+                    continue;
+                }
             }
 
             //VERIFICA SE O PRODUTO ESTA ASSOCIADO A CONFIGURABLES, SE SIM E A CONFIGURACAO FOR PRODUTO UNICO
             //PREPARA PARA ENVIAR O CONFIGURABLE COMO PRODUCT E ASSOCIAR O SIMPLE COMO SKU
-            if (!empty($configurableIds) && $configProd == 1) {
-                //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
-                list($_Scats,$Spictures) = self::prepareProduct($product);
-                $idSimple = $product->getId();
-                //PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES PARA CADA UM
-                foreach ($configurableIds as $configurableId) {
-                    $_Sattrs = self::prepareSkuAttributes($product, $configurableId);
-                    //CARREGA O PRODUTO CONFIGURAVEL DE ACORDO COM O ID RETORNADO
-                    $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
-                    //PREPARA AS INFORMACOES DO PRODUTO CONFIGURAVEL PARA O ENVIO
-                    list($_cats,$pictures) = self::prepareProduct($configurableProduct);
-                    $_attrs = self::prepareAttributes($configurableProduct,$_attributes,$attributes);
-                    $productId = $configurableProduct->getId();
-                    //ENVIA O PRODUTO CONFIGURAVEL PARA O INTEGRA
-
-                    list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newProduct($configurableProduct,$_cats,$_attrs,$loadedAttrs,$authentication,$environment);
-
-                    //VERIFICANDO ERROS DO PRODUTO
-                    if ($errorId == $productId) {
-                        Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0,'product');
-                    } else {
-                        Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
-                    }
-
-                    $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
-
-                    if ($productControl == 2) {
-                        $idProduct = $configurableProduct->getData('sku');
-                    } else {
-                        $idProduct = $configurableProduct->getId();
-                    }
-
-                    //ENVIA O PRODUTO SIMPLES PARA O INTEGRA
-                    if (empty($Spictures) || !$Spictures) {
-                        list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product,$configurableProduct,$pictures,$_Sattrs,$loadedAttrs,$idProduct,$authentication,$environment);
-                    } else {
-                        list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product,$configurableProduct,$Spictures,$_Sattrs,$loadedAttrs,$idProduct,$authentication,$environment);
-                    }
-
-                    //VERIFICANDO ERROS DE SKU
-                    if ($errorId == $productId) {
-                        Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId,0, 'sku');
-                    } else {
-                        Novapc_Integracommerce_Helper_Data::checkError(null, null, $idSimple, 1, 'sku');
-                    }
-
-                    $requested++;
-                    if ($requested == 600) {
-                        return $requested;
-                    }
-                    sleep(2);
+            if ($productType == 'simple' && $configProd == 1) {
+                $configurableIds = Mage::getModel('catalog/product_type_configurable')
+                    ->getParentIdsByChild($product->getId());
+                if (!empty($configurableIds)) {
+                    $configRequested = self::configurableProduct($product, $configurableIds, $environment, $loadedAttrs, $requested, $initialAttributes, $attributes);
+                    $requested = $requested + $configRequested;
+                    continue;
                 }
+            }
 
+            if ($productType == 'configurable' && $product->getData('integracommerce_active') == 0) {
                 continue;
             }
 
             $productId = $product->getId();
 
-            list($_cats,$pictures) = self::prepareProduct($product);
-            $_attrs = self::prepareAttributes($product,$_attributes,$attributes);
+            list($productCats,$pictures) = self::prepareProduct($product);
+            $productAttrs = self::prepareAttributes($product, $initialAttributes, $attributes);
 
-            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newProduct($product,$_cats,$_attrs,$loadedAttrs,$authentication,$environment);
+            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newProduct($product, $productCats, $productAttrs, $loadedAttrs, $environment);
             //VERIFICANDO ERROS DE PRODUTO
             if ($errorId == $productId) {
-                Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId,0, 'product');
+                Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'product');
             } else {
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
             }
 
-            if ($productType == 'configurable') {
-                continue;
-            }
-
-            $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
+            $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
             if ($productControl == 2) {
                 $idProduct = $product->getData('sku');
@@ -232,12 +177,12 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 $idProduct = $product->getId();
             }
 
-            $_skuAttrs = self::prepareSkuAttributes($product, null);
-            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product,null,$pictures,$_skuAttrs,$loadedAttrs,$idProduct,$authentication,$environment);
+            $skuAttrs = self::prepareSkuAttributes($product, null);
+            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product, $pictures, $skuAttrs, $loadedAttrs, $idProduct, $environment, null);
 
             //VERIFICANDO ERROS DE PRODUTO
             if ($errorId == $productId) {
-                Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId,0, 'sku');
+                Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'sku');
             } else {
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'sku');
             }
@@ -246,43 +191,104 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if ($requested == 600) {
                 return $requested;
             }
+
             sleep(2);
         }
 
         return $requested;
     }
 
-    public static function prepareAttributes($product,$_attributes,$attributes)
-    {   
-        $_attrs = array();
+    public static function configurableProduct($product, $configurableIds, $environment, $loadedAttrs, $requested, $initialAttributes, $attributes)
+    {
+        //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
+        $configRequested = 0;
+        list($simpleCats,$simplePics) = self::prepareProduct($product);
+        $idSimple = $product->getId();
+        //PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES PARA CADA UM
+        foreach ($configurableIds as $configurableId) {
+            $simpleAttrs = self::prepareSkuAttributes($product, $configurableId);
+            //CARREGA O PRODUTO CONFIGURAVEL DE ACORDO COM O ID RETORNADO
+            $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
+            //PREPARA AS INFORMACOES DO PRODUTO CONFIGURAVEL PARA O ENVIO
+            list($configurableCats,$pictures) = self::prepareProduct($configurableProduct);
+            $configurableAttrs = self::prepareAttributes($configurableProduct, $initialAttributes, $attributes);
+            $productId = $configurableProduct->getId();
 
-        if (empty($_attributes)) { 
-            array_push($_attrs, 
-                array(
+            //ENVIA O PRODUTO CONFIGURAVEL PARA O INTEGRA
+            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newProduct($configurableProduct, $configurableCats, $configurableAttrs, $loadedAttrs, $environment);
+
+            //VERIFICANDO ERROS DO PRODUTO
+            if ($errorId == $productId) {
+                Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'product');
+            } else {
+                Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
+            }
+
+            $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
+
+            if ($productControl == 2) {
+                $idProduct = $configurableProduct->getData('sku');
+            } else {
+                $idProduct = $configurableProduct->getId();
+            }
+
+            //ENVIA O PRODUTO SIMPLES PARA O INTEGRA
+            if (empty($simplePics) || !$simplePics) {
+                list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product, $pictures, $simpleAttrs, $loadedAttrs, $idProduct, $environment, $configurableProduct);
+            } else {
+                list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku($product, $simplePics, $simpleAttrs, $loadedAttrs, $idProduct, $environment, $configurableProduct);
+            }
+
+            //VERIFICANDO ERROS DE SKU
+            if ($errorId == $productId) {
+                Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'sku');
+            } else {
+                Novapc_Integracommerce_Helper_Data::checkError(null, null, $idSimple, 1, 'sku');
+            }
+
+            $configRequested++;
+            $requested++;
+            if ($requested == 600) {
+                return $configRequested;
+            }
+
+            sleep(2);
+        }
+
+        return $configRequested;
+    }
+
+    public static function prepareAttributes($product, $initialAttributes, $attributes)
+    {   
+        $attrsArray = array();
+
+        if (empty($initialAttributes)) {
+            array_push(
+                $attrsArray, array(
                     "Name" => "",
                     "Value" => ""
                 )
             );                       
         } else {
-            foreach ($attributes as $attr_code) {
-                $attribute = $product->getResource()->getAttribute($attr_code);
+            foreach ($attributes as $attrCode) {
+                $attribute = $product->getResource()->getAttribute($attrCode);
                 $attrValue = "";
 
                 if ($attribute->getFrontendInput() == 'select') {
-                    $attrValue = $product->getAttributeText($attr_code);
+                    $attrValue = $product->getAttributeText($attrCode);
                 } elseif ($attribute->getFrontendInput() == 'boolean') {
-                    if ($product->getData($attr_code) == 0) {
+                    if ($product->getData($attrCode) == 0) {
                         $attrValue = 'Não';
                     } else {
                         $attrValue = 'Sim';
                     }
                 } elseif ($attribute->getFrontendInput() == 'multiselect') {
-                    $attrValue = $product->getAttributeText($attr_code);
+                    $attrValue = $product->getAttributeText($attrCode);
                     if (is_array($attrValue)) {
-                        $attrValue = implode(",",$attrValue);
+                        $attrValue = implode(",", $attrValue);
                     }
                 } else {
-                    $attrValue = $product->getData($attr_code);
+                    $attrValue = $product->getData($attrCode);
                 }
 
                 $frontendLabel = $attribute->getFrontendLabel();
@@ -291,8 +297,8 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                     continue;
                 }
 
-                array_push($_attrs, 
-                    array(
+                array_push(
+                    $attrsArray, array(
                         "Name" => (empty($frontendLabel) ? $storeLabel : $frontendLabel),
                         "Value" => $attrValue 
                     )
@@ -300,76 +306,79 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             }                
         }
 
-        return $_attrs;
+        return $attrsArray;
     }
 
     public static function prepareSkuAttributes($product, $configurableId = null)
     {
-        $_attrs = array();
+        $attrsArray = array();
         $i = 0;
 
         $categoryIds = $product->getCategoryIds();
 
+        /*SE O PRODUTO ESTIVER SEM CATEGORIAS E FOR ASSOCIADO A UM CONFIGURABLE CARREGA
+        AS CATEGORIAS DO CONFIGURABLE*/
         if (empty($categoryIds) && !empty($configurableId)) {
             $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
             $categoryIds = $configurableProduct->getCategoryIds();
         }
 
-        //INVERTENDO A ORDEM DO ARRAY PARA COMECAR DO ULTIMO NIVEL DE CATEGORIA
+        /*INVERTENDO A ORDEM DO ARRAY PARA COMECAR DO ULTIMO NIVEL DE CATEGORIA*/
         $categoryIds = array_reverse($categoryIds);
 
         foreach ($categoryIds as $categoryId) {
-            $categoryModel = Mage::getModel('integracommerce/sku')
-                ->getCollection()
-                ->addFieldToFilter('category',$categoryId)
-                ->getFirstItem();
+            /*CARREGA O MODEL DE ATRIBUTOS DO MODULO ATRAVES DO CODIGO DA CATEGORIA*/
+            $categoryModel = Mage::getModel('integracommerce/sku')->load($categoryId, 'category');
 
-            $attr_code = $categoryModel->getAttribute();
+            /*CARREGA O CODIGO DO ATRIBUTO*/
+            $attrCode = $categoryModel->getAttribute();
 
-            if (!$attr_code || empty($attr_code)) {
+            /*CASO NAO RETORNE NENHUM ATRIBUTO, CARREGA O CODIGO DA CATEGORIA DE NIVEL SUPERIOR E TENTA CARREGAR
+            O ATRIBUTO ATRAVES DESSE CODIGO*/
+            if (!$attrCode || empty($attrCode)) {
                 $category = Mage::getModel('catalog/category')->load($categoryId);
                 $parentId = $category->getData('parent_id');
 
-                $categoryModel = Mage::getModel('integracommerce/sku')
-                    ->getCollection()
-                    ->addFieldToFilter('category',$parentId)
-                    ->getFirstItem();
+                $categoryModel = Mage::getModel('integracommerce/sku')->load($parentId, 'category');
 
-                $attr_code = $categoryModel->getAttribute();
+                $attrCode = $categoryModel->getAttribute();
 
-                if (!$attr_code || empty($attr_code)) {
+                if (!$attrCode || empty($attrCode)) {
                     continue;
                 }
             }
 
-            $attribute = $product->getResource()->getAttribute($attr_code);
+            /*CARREGA O ATRIBUTO*/
+            $attribute = $product->getResource()->getAttribute($attrCode);
             $attrValue = "";
 
+            /*VERIFICA O TIPO DO ATRIBUTO E CARREGA O SEU VALOR DE ACORDO COM SEU TIPO*/
             if ($attribute->getFrontendInput() == 'select') {
-                $attrValue = $product->getAttributeText($attr_code);
+                $attrValue = $product->getAttributeText($attrCode);
             } elseif ($attribute->getFrontendInput() == 'boolean') {
-                if ($product->getData($attr_code) == 0) {
+                if ($product->getData($attrCode) == 0) {
                     $attrValue = 'Não';
                 } else {
                     $attrValue = 'Sim';
                 }
             } elseif ($attribute->getFrontendInput() == 'multiselect') {
-                $attrValue = $product->getAttributeText($attr_code);
+                $attrValue = $product->getAttributeText($attrCode);
                 if (is_array($attrValue)) {
-                    $attrValue = implode(",",$attrValue);
+                    $attrValue = implode(",", $attrValue);
                 }
             } else {
-                $attrValue = $product->getData($attr_code);
+                $attrValue = $product->getData($attrCode);
             }
 
+            /*CARREGA AS LABELS DO ATRIBUTO, A PRIORIDADE SERA DA FRONTENDLABEL*/
             $frontendLabel = $attribute->getFrontendLabel();
             $storeLabel = $attribute->getStoreLabel();
             if (( empty($frontendLabel) && empty($storeLabel)) || empty($attrValue)) {
                 continue;
             }
 
-            array_push($_attrs,
-                array(
+            array_push(
+                $attrsArray, array(
                     "Name" => (empty($frontendLabel) ? $storeLabel : $frontendLabel),
                     "Value" => $attrValue
                 )
@@ -377,20 +386,21 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
             $i++;
 
-            //PARANDO EXECUCAO PARA ENVIAR APENAS 1 ATRIBUTO
+            /*PARANDO EXECUCAO PARA ENVIAR APENAS 1 ATRIBUTO*/
             break;
         }
 
+        /*SE NAO ENCONTROU NENHUM ATRIBUTO RETORNA O ARRAY SEM INFORMACOES*/
         if ($i == 0) {
-            array_push($_attrs,
-                array(
+            array_push(
+                $attrsArray, array(
                     "Name" => "",
                     "Value" => ""
                 )
             );
         }
 
-        return $_attrs;
+        return $attrsArray;
     }
 
     public static function prepareProduct($product)
@@ -398,15 +408,15 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         $product->getResource()->getAttribute('media_gallery')
             ->getBackend()->afterLoad($product);
 
-        $_cats = array();        
+        $categories = array();
         $pictures = array();
 
         $categoryIds = $product->getCategoryIds();
         if (count($categoryIds) <= 1) {
                 $actual = Mage::getModel('catalog/category')->load(array_shift($categoryIds));
                 $name = $actual->getName();
-            array_push($_cats, 
-                array(
+            array_push(
+                $categories, array(
                     "Id" => $actual->getData('entity_id'),
                     "Name" => $name,
                     "ParentId" => $actual->getData('parent_id')
@@ -419,10 +429,11 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 if ($catLevel <= 1) {
                     continue;
                 }
+
                 $name = $actual->getName();
                 $parentId = $actual->getParentId();
-                array_push($_cats, 
-                    array(
+                array_push(
+                    $categories, array(
                         "Id" => $category,
                         "Name" => $name,
                         "ParentId" => ($parentId == 2 ? '' : $parentId)
@@ -455,26 +466,37 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             }
         }
 
-        return array($_cats,$pictures);   
+        return array($categories,$pictures);
     }
 
     public static function loadAttr($attrCollection)
     { 
-        $loadedAttrs = array($attrCollection->getNbmOrigin(), $attrCollection->getNbmNumber(), $attrCollection->getWarranty(), $attrCollection->getBrand(), $attrCollection->getHeight(), $attrCollection->getWidth(), $attrCollection->getLength(), $attrCollection->getWeight(), $attrCollection->getEan(), $attrCollection->getNcm(), $attrCollection->getIsbn());
+        $loadedAttrs = array(
+            $attrCollection->getNbmOrigin(),
+            $attrCollection->getNbmNumber(),
+            $attrCollection->getWarranty(),
+            $attrCollection->getBrand(),
+            $attrCollection->getHeight(),
+            $attrCollection->getWidth(),
+            $attrCollection->getLength(),
+            $attrCollection->getWeight(),
+            $attrCollection->getEan(),
+            $attrCollection->getNcm(),
+            $attrCollection->getIsbn()
+        );
 
         return $loadedAttrs;
 
     }    
 
-    public static function forceUpdate($authentication, $alreadyRequested)
+    public static function forceUpdate($alreadyRequested)
     {
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
         $queueCollection = Mage::getModel('integracommerce/update')->getCollection()->getAllIds();
         $productCollection = Mage::getModel('catalog/product')->getCollection()
             ->addFieldToFilter('entity_id', array('in' => $queueCollection))
             ->addAttributeToSelect('*');
 
-        $requested = self::productSelection($productCollection,$authentication, $alreadyRequested);
+        $requested = self::productSelection($productCollection, $alreadyRequested);
 
         foreach ($productCollection as $product) {
             $productId = $product->getId();
@@ -484,7 +506,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 continue;
             }
 
-            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updatePrice($product,$authentication,$environment);
+            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updatePrice($product);
             //VERIFICANDO ERROS DE PRECO
             if ($errorId == $productId) {
                 Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'price');
@@ -492,7 +514,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'price');
             }
 
-            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updateStock($product,$authentication,$environment);
+            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updateStock($product);
             //VERIFICANDO ERROS DE ESTOQUE
             if ($errorId == $productId) {
                 Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'stock');
@@ -501,7 +523,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             }
 
             $alreadyRequested++;
-            if ($alreadyRequested == 600) {
+            if ($alreadyRequested == $requested) {
                 break;
             }
         }
@@ -525,21 +547,29 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             $week = 75000;
         }
 
+        /*CARREGANDO A QUANTIDADE DE REQUISICOES POR TEMPO*/
         $requestedHour = $model->getRequestedHour();
         $requestedDay = $model->getRequestedDay();
         $requestedWeek = $model->getRequestedWeek();
+
+        /*CARREGANDO O HORARIO DA ULTIMA REQUISICAO*/
         $status = new DateTime($model->getStatus());
-        $now = new DateTime(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
+        $initialHour = new DateTime($model->getInitialHour());
+        $now = new DateTime(Mage::getSingleton('core/date')->date('Y-m-d H:i:s'));
         $diff = date_diff($status, $now);
+        $diffInitial = date_diff($initialHour, $now);
 
         //CHECANDO REQUISICOES HORA
         if ($requestedHour >= $hour && $diff->h < 1) {
             $message = 'O limite de ' . $hour . ' requisições por hora foi atingido, por favor, tente mais tarde.';
         } elseif ($diff->h >= 1) {
+            /*SE A DIFERENCA DE HORAS FOR MAIOR OU IGUAL A UM LIBERA O METODO*/
             $model->setRequestedHour(0);
             $model->setAvailable(1);
             $model->save();
         } elseif ($requestedHour < $hour && $diff->h < 1) {
+            /*SE A QUANTIDADE DE REQUISICOES POR HORA FOR MENOR QUE O LIMITE E A DIFERENCA DE HORAS FOR MENOR QUE UM
+            LIBERA O METODO*/
             $model->setAvailable(1);
             $model->save();
         }
@@ -548,14 +578,17 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         if ($requestedDay >= $day && $diff->d < 1) {
             $message = 'O limite de ' . $day . ' requisições por dia foi atingido, por favor, tente mais tarde.';
         } elseif ($diff->d >= 1) {
+            /*SE A DIFERENCA DE DIAS FOR MAIOR OU IGUAL A UM LIBERA O METODO*/
             $model->setRequestedDay(0);
             $model->save();
         }
 
         //CHECANDO REQUISICOES SEMANA
-        if ($requestedWeek >= $week && $diff->d < 7) {
+        if ($requestedWeek >= $week && $diffInitial->d < 7) {
             $message = 'O limite de ' . $week . ' requisições por semana foi atingido, por favor, tente mais tarde.';
-        } elseif ($diff->d >= 7) {
+        } elseif ($diffInitial->d >= 7) {
+            /*SE A DIFERENCA DE DIAS FOR MAIOR OU IGUAL A SETE LIBERA O METODO*/
+            $model->setInitialHour(null);
             $model->setRequestedWeek(0);
             $model->save();
         }

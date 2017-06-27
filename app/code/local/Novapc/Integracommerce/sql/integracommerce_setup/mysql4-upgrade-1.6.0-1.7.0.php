@@ -1,19 +1,21 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce 
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       Novapc
- * @version      Release: 0.1.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 $installer = $this; 
 $installer->startSetup();
 
-$setup = new Mage_Eav_Model_Entity_Setup('core_setup');
-$entityTypeId = $setup->getEntityTypeId('catalog_product');
+$entityTypeId = $installer->getEntityTypeId('catalog_product');
 
 $codigo = 'integracommerce_sync';
 $config = array(
@@ -29,15 +31,15 @@ $config = array(
     'note'     => 'Se deseja sincronizar este produto com o Integracommerce, marque Sim.'
 );
 
-$setup->addAttribute('catalog_product', $codigo, $config);
+$installer->addAttribute('catalog_product', $codigo, $config);
 
-$attributeId = $setup->getAttributeId($entityTypeId, 'integracommerce_sync');
+$attributeId = $installer->getAttributeId($entityTypeId, 'integracommerce_sync');
 
-$setup->run("
-INSERT IGNORE INTO `{$installer->getTable('catalog_product_entity_int')}`
+$installer->run(
+    "INSERT IGNORE INTO `{$installer->getTable('catalog_product_entity_int')}`
 (`entity_type_id`, `attribute_id`, `entity_id`, `value`)
     SELECT '{$entityTypeId}', '{$attributeId}', `entity_id`, '0'
-        FROM `{$installer->getTable('catalog_product_entity')}`;
-");
+        FROM `{$installer->getTable('catalog_product_entity')}`;"
+);
 
 $installer->endSetup();

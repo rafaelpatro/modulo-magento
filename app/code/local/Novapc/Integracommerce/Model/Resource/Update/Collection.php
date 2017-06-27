@@ -1,6 +1,18 @@
 <?php
+/**
+ * PHP version 5
+ * Novapc Integracommerce
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
+ */
 
-class Novapc_Integracommerce_Model_Mysql4_Update_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
+class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_Model_Resource_Db_Collection_Abstract
 {
     public function _construct()
     {
@@ -14,9 +26,10 @@ class Novapc_Integracommerce_Model_Mysql4_Update_Collection extends Mage_Core_Mo
 
     protected function _buildClearSelect($select = null)
     {
-        if (is_null($select)) {
+        if (empty($select)) {
             $select = clone $this->getSelect();
         }
+
         $select->reset(Zend_Db_Select::ORDER);
         $select->reset(Zend_Db_Select::LIMIT_COUNT);
         $select->reset(Zend_Db_Select::LIMIT_OFFSET);

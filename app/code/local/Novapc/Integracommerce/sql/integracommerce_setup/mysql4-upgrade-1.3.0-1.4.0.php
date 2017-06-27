@@ -1,22 +1,24 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce 
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       Novapc
- * @version      Release: 0.1.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 $installer = $this; 
 $installer->startSetup();
 
-$installer->run("
-        
-
-INSERT INTO `npcintegra_attributes` (`nbm_origin`, `nbm_number`, `warranty`, `brand`, `height`, `width`, `length`, `weight`, `ean`, `ncm`, `isbn`) VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
- 
-    ");
+$installer->run(
+    "INSERT INTO `npcintegra_attributes` 
+    (`nbm_origin`, `nbm_number`, `warranty`, `brand`, `height`, `width`, `length`, `weight`, `ean`, `ncm`, `isbn`) 
+    VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);"
+);
 
 $installer->endSetup();

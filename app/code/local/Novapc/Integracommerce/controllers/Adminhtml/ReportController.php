@@ -1,22 +1,23 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       NovaPC
- * @version      Release: 1.0.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_Controller_Action
 {
 
-	
+
     public function indexAction() 
     {
-        //$this->_initAction();
-        //$this->renderLayout();
         $this->loadLayout();
         $this->_setActiveMenu('integracommerce');
         $this->renderLayout();
@@ -26,7 +27,8 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
     /**
      * Product grid for AJAX request
      */
-    public function gridAction() {
+    public function gridAction()
+    {
         $this->loadLayout();
         $this->getResponse()->setBody(
             $this->getLayout()->createBlock('integracommerce/adminhtml_report_grid')->toHtml()
@@ -39,9 +41,12 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
         $queueModel = Mage::getModel('integracommerce/update')->load($productQueueId, 'product_id');
         Mage::register('report_data', $queueModel);
         $this->loadLayout();
-        $this->_addContent($this->getLayout()
-            ->createBlock('integracommerce/adminhtml_report_edit'))
-            ->_addLeft($this->getLayout()
+        $this->_addContent(
+            $this->getLayout()
+            ->createBlock('integracommerce/adminhtml_report_edit')
+        )
+            ->_addLeft(
+                $this->getLayout()
                 ->createBlock('integracommerce/adminhtml_report_edit_tabs')
             );
         $this->renderLayout();
@@ -49,8 +54,7 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
 
     public function deleteAction()
     {
-        if($this->getRequest()->getParam('id') > 0)
-        {
+        if ($this->getRequest()->getParam('id') > 0) {
             try
             {
                 $errorQueue = Mage::getModel('integracommerce/update')->load($this->getRequest()->getParam('id'), 'product_id');
@@ -64,6 +68,7 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
                 $this->_redirect('*/*/edit', array('id' => $this->getRequest()->getParam('id')));
             }
         }
+
         $this->_redirect('*/*/');
     }
 
@@ -71,8 +76,10 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
     {
         $itensIds = (array) $this->getRequest()->getParam('integracommerce_report');
 
-        foreach ($itensIds as $id) {
-            $item = Mage::getModel('integracommerce/update')->load($id, 'entity_id');
+        $collection = Mage::getModel('integracommerce/update')->getCollection()
+            ->addFieldToFilter('entity_id', array('in' => $itensIds));
+
+        foreach ($collection as $item) {
             $item->delete();
         }
 

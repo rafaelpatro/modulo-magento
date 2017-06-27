@@ -1,22 +1,21 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       NovaPC
- * @version      Release: 1.0.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_Controller_Action
 {
-
-	
     public function indexAction() 
     {
-        //$this->_initAction();
-        //$this->renderLayout();
         $this->loadLayout();
         $this->_setActiveMenu('integracommerce');
         $this->renderLayout();
@@ -25,22 +24,28 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
     protected function integrateAction() 
     {
+        /*CARREGA O MODEL DE CONTROLE DE REQUISICOES DE PEDIDOS*/
         $orderModel = Mage::getModel('integracommerce/queue')->load('Order', 'integra_model');
+        /*VERIFICA A QUANTIDADE DE REQUISICOES*/
         $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, 'get');
 
         if (isset($message)) {
+            /*SE FOR RETORNADO UMA MENSAGEM DE ERRO BLOQUEIA O METODO E RETORNA A MENSAGEM AO USUARIO*/
             Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($message));
             $orderModel->setAvailable(0);
             $orderModel->save();
             $this->_redirect('*/*/');
         } else {
+            /*INICIANDO GET DE PEDIDOS*/
             $requested = Novapc_Integracommerce_Helper_Data::getOrders();
 
             if (empty($requested['Orders'])) {
+                /*SE NAO FOR RETORNADO PEDIDOS RETORNA A MENSAGEM AO USUARIO*/
                 Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__('Não existe nenhum pedido em Aprovado no momento.'));
                 $this->_redirect('*/*/');
             }
 
+            /*INCIA PROCESSO DE CRIACAO DE PEDIDOS*/
             Novapc_Integracommerce_Helper_OrderData::startOrders($requested, $orderModel);
 
             Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__('Sincronização Completa.'));
@@ -52,13 +57,11 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
     {
         $ordersIds = (array) $this->getRequest()->getParam('integracommerce_order');
 
-        foreach ($ordersIds as $orderId) {
-            $orderModel = Mage::getModel('integracommerce/order')
-                            ->getCollection()
-                            ->addFieldToFilter('entity_id',$orderId)
-                            ->getFirstItem();                          
+        $collection = Mage::getModel('integracommerce/order')->getCollection()
+            ->addFieldToFilter('entity_id', array('in' => $ordersIds));
 
-            $orderModel->delete();                        
+        foreach ($collection as $order) {
+            $order->delete();
         }
 
         $this->_redirect('*/*/');
@@ -75,12 +78,10 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
             $orderModel->save();
             $this->_redirect('*/*/');
         } else {
-            $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-            $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-            $authentication = base64_encode($api_user . ':' . $api_password);
             $requestedHour = $orderModel->getRequestedHour();
             $requestedDay = $orderModel->getRequestedDay();
             $requestedWeek = $orderModel->getRequestedWeek();
+            $requestedInitial = $orderModel->getInitialHour();
 
             $ordersIds = (array) $this->getRequest()->getParam('integracommerce_order');
 
@@ -100,24 +101,16 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
                 $integraId = $checkOrder->getIntegraId();
 
-                $geturl = "https://api.integracommerce.com.br/api/Order/" . $integraId;
+                $url = "https://api.integracommerce.com.br/api/Order/" . $integraId;
 
-                $ch = curl_init();
-                curl_setopt($ch,CURLOPT_URL,$geturl);
-                curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Authorization: Basic " . $authentication . ""));
-                $response = curl_exec($ch);
-                curl_close ($ch);
-
-                $order = json_decode($response, true);
+                $return = Novapc_Integracommerce_Helper_Data::callCurl("GET", $url, null);
 
                 $requested++;
-
-                if ($order['OrderStatus'] !== 'APPROVED' && $order['OrderStatus'] !== 'PROCESSING') {
+                if ($return['OrderStatus'] !== 'APPROVED' && $return['OrderStatus'] !== 'PROCESSING') {
                     continue;
                 }
 
-                Novapc_Integracommerce_Helper_OrderData::processingOrder($order);
+                Novapc_Integracommerce_Helper_OrderData::processingOrder($return);
 
                 sleep(2);
             }
@@ -125,11 +118,17 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
             $requestedHour = $requestedHour + $requested;
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
+            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
 
-            $orderModel->setStatus(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
+            $orderModel->setStatus($requestTime);
             $orderModel->setRequestedHour($requestedHour);
             $orderModel->setRequestedDay($requestedDay);
             $orderModel->setRequestedWeek($requestedWeek);
+
+            if (empty($requestedInitial)) {
+                $orderModel->setInitialHour($requestTime);
+            }
+
             $orderModel->save();
 
             Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__('Sincronização Completa!'));
@@ -144,20 +143,12 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
         $this->renderLayout();
     }
 
-    public function feedbackAction()
-    {
-        return;
-    }  
-
-    public function replyAction()
-    {
-        return;
-    }      
 
     /**
      * Product grid for AJAX request
      */
-    public function gridAction() {
+    public function gridAction()
+    {
         $this->loadLayout();
         $this->getResponse()->setBody(
             $this->getLayout()->createBlock('integracommerce/adminhtml_order_grid')->toHtml()

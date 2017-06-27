@@ -1,19 +1,23 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce 
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       Novapc
- * @version      Release: 1.0.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
 class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 {
-    public static function updateStock($product,$authentication,$environment)
-    {   
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type',Mage::app()->getStore());
+    public static function updateStock($product)
+    {
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
+        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if ($exportType == 1) {
             if ($product->getData('integracommerce_sync') == 0) {
                 return;
@@ -29,7 +33,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
 
-        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
+        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         if ($productControl == 2) {
             $idSku = $product->getData('sku');
         } else {
@@ -37,47 +41,26 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $body = array();
-        array_push($body,
-            array(
+        array_push(
+            $body, array(
                 'IdSku' => $idSku,
                 'Quantity' => $stockQuantity
             )
         );
 
         $jsonBody = json_encode($body);
-        if ($environment == 1) {
-            $stock_url = 'https://api.integracommerce.com.br/api/Stock';
-        } else {
-            $stock_url = 'https://in.integracommerce.com.br/api/Stock';
+
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/Stock';
+
+        $return = self::callCurl("PUT", $url, $jsonBody);
+
+        if ($return['httpCode'] !== 204 && $return['httpCode'] !== 201) {
+            return array($jsonBody, $return, $product->getId());
         }
-
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL, $stock_url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Accept: application/json", "Authorization: Basic " . $authentication . ""));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $jsonBody);
-
-        $response = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close ($ch);
-
-        if ($httpcode !== 204 && $httpcode !== 201) {
-            return array($jsonBody, $response, $product->getId());
-        }
-
-        return;
-
     }
 
-    public static function newProduct($product,$_cats,$_attrs,$loadedAttrs, $authentication, $environment)
+    public static function newProduct($product,$_cats,$_attrs,$loadedAttrs, $environment)
     {
-        if ($environment == 1) {
-            $post_url = 'https://api.integracommerce.com.br/api/Product';
-        } else {
-            $post_url = 'https://in.integracommerce.com.br/api/Product';
-        }
-
         if ($loadedAttrs['0'] !== 'not_selected') {
             $_nbmOrigin = $product->getResource()->getAttribute($loadedAttrs['0']);
 
@@ -148,7 +131,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $nbmOrigin = "0";
         }
 
-        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
+        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
         if ($productControl == 2) {
             $idProduct = $product->getData('sku');
@@ -171,25 +154,16 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $jsonBody = json_encode($body);
 
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL, $post_url);
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/Product';
+
         if ($product->getData('integracommerce_active') == 0) {
-            curl_setopt($ch, CURLOPT_POST, true);   
+            $return = self::callCurl("POST", $url, $jsonBody);
         } elseif ($product->getData('integracommerce_active') == 1) {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            $return = self::callCurl("PUT", $url, $jsonBody);
         }
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Accept: application/json", "Authorization: Basic " . $authentication . ""));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $jsonBody);
 
-        $response = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close ($ch);
-
-        $productId = $product->getId();
-
-        if ($httpcode !== 204 && $httpcode !== 201) {
-            return array($jsonBody, $response, $product->getId());
+        if ($return['httpCode'] !== 204 && $return['httpCode'] !== 201) {
+            return array($jsonBody, $return, $product->getId());
         }
 
         $productType = $product->getTypeId();
@@ -200,20 +174,13 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
                 0
             );
         }
-        
-        return;
-
     }
 
-    public static function newSku($product,$configurableProduct = null,$pictures,$_attrs,$loadedAttrs,$productId,$authentication,$environment)
+    public static function newSku($product, $pictures, $_attrs, $loadedAttrs, $productId, $environment, $configurableProduct = null)
     {
-        $measure = Mage::getStoreConfig('integracommerce/general/measure',Mage::app()->getStore());
+        $measure = Mage::getStoreConfig('integracommerce/general/measure', Mage::app()->getStore());
 
-        if ($environment == 1) {
-            $post_url = 'https://api.integracommerce.com.br/api/Sku';
-        } else {
-            $post_url = 'https://in.integracommerce.com.br/api/Sku';
-        }
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/Sku';
 
         $heightValue = $product->getData($loadedAttrs['4']);
         $widthValue = $product->getData($loadedAttrs['5']);
@@ -241,7 +208,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         if (!$normalPrice || empty($normalPrice) || $normalPrice < 1) {
-            if ($configurableProduct && !empty($configurableProduct)){
+            if ($configurableProduct && !empty($configurableProduct)) {
                 if ($configurableProduct->getId()) {
                     $normalPrice = $configurableProduct->getPrice();
                     $specialPrice = $configurableProduct->getSpecialPrice();
@@ -256,13 +223,13 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $weight = $product->getData($loadedAttrs['7']);
 
-        if (strstr($weight,".") !== false) {
+        if (strstr($weight, ".") !== false) {
             $weight = (float) $product->getData($loadedAttrs['7']);
         } else {
             $weight = (int) $product->getData($loadedAttrs['7']);
         }
 
-        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
+        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
         if ($productControl == 2) {
             $idSku = $product->getData('sku');
@@ -304,66 +271,41 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $jsonBody = json_encode($body);
 
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL, $post_url);
         if ($product->getData('integracommerce_active') == 0) {
-            curl_setopt($ch, CURLOPT_POST, true);   
+            $return = self::callCurl("POST", $url, $jsonBody);
         } elseif ($product->getData('integracommerce_active') == 1) {
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
+            $return = self::callCurl("PUT", $url, $jsonBody);
         }
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Accept: application/json", "Authorization: Basic " . $authentication . ""));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $jsonBody);
-
-        $response = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close ($ch);
 
         $productId = $product->getId();
 
-        if ($httpcode !== 204 && $httpcode !== 201) {
-            return array($jsonBody, $response, $product->getId());
+        if ($return['httpCode'] !== 204 && $return['httpCode'] !== 201) {
+            return array($jsonBody, $return, $product->getId());
         }
 
         if ($product->getData('integracommerce_active') == 0) {
             Mage::getSingleton('catalog/product_action')->updateAttributes(
-                array($product->getId()),               
-                array('integracommerce_active' => 1), 
-                0                                   
+                array($product->getId()),
+                array('integracommerce_active' => 1),
+                0
             );
         }
-
-        return;
     } 
 
     public static function getOrders()
     {
-        $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-        $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-        $authentication = base64_encode($api_user . ':' . $api_password);         
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
 
-        if ($environment == 1) {
-            $geturl = "https://api.integracommerce.com.br/api/Order?page=1&perPage=10&status=approved";
-        } else {
-            $geturl = "https://in.integracommerce.com.br/api/Order?page=1&perPage=10&status=approved";
-        }
+        $url = "https://" . $environment . ".integracommerce.com.br/api/Order?page=1&perPage=10&status=approved";
 
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL,$geturl);
-        curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Authorization: Basic " . $authentication . ""));
+        $return = self::callCurl("GET", $url, null);
 
-        $response = curl_exec($ch);
-        curl_close ($ch);
-
-        $responseArray = json_decode($response, true);
-
-        return $responseArray;
+        return $return;
     } 
 
-    public static function updatePrice($product,$authentication,$environment)
+    public static function updatePrice($product)
     {
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
         if ($product->getData('integracommerce_active') == 0) {
             return;
         }
@@ -372,7 +314,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $configurableIds = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product->getId());
         }
 
-        $configProd = Mage::getStoreConfig('integracommerce/general/configprod',Mage::app()->getStore());
+        $configProd = Mage::getStoreConfig('integracommerce/general/configprod', Mage::app()->getStore());
 
         $normalPrice = $product->getPrice();
         $specialPrice = $product->getSpecialPrice();
@@ -393,7 +335,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             }
         }
 
-        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control',Mage::app()->getStore());
+        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         if ($productControl == 2) {
             $idSku = $product->getData('sku');
         } else {
@@ -401,8 +343,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $body = array();
-        array_push($body,
-            array(
+        array_push(
+            $body, array(
                 'IdSku' => $idSku,
                 'ListPrice' => ($normalPrice < $specialPrice ? $specialPrice : $normalPrice),
                 'SalePrice' => $specialPrice
@@ -411,71 +353,17 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $jsonBody = json_encode($body);
 
-        if ($environment == 1) {
-            $price_url = 'https://api.integracommerce.com.br/api/Price';
-        } else {
-            $price_url = 'https://in.integracommerce.com.br/api/Price';
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/Price';
+
+        $return = self::callCurl("PUT", $url, $jsonBody);
+
+        if ($return['httpCode'] !== 204 && $return['httpCode'] !== 201) {
+            return array($jsonBody, $return, $product->getId());
         }
-
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL, $price_url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Accept: application/json", "Authorization: Basic " . $authentication . ""));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $jsonBody);
-
-        $response = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close ($ch);
-
-        if ($httpcode !== 204 && $httpcode !== 201) {
-            return array($jsonBody, $response, $product->getId());
-        }
-
-        return;
     }
 
-    public static function postCategory($body)
+    public static function checkError($jsonBody = null, $response = null, $productId = null, $delete = null, $type = null)
     {
-                  
-        $jsonBody = json_encode($body);
-
-        $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-        $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-        $authentication = base64_encode($api_user . ':' . $api_password);
-        $environment = Mage::getStoreConfig('integracommerce/general/environment',Mage::app()->getStore());
-
-        if ($environment == 1) {
-            $category_url = 'https://api.integracommerce.com.br/api/Category';
-        } else {
-            $category_url = 'https://in.integracommerce.com.br/api/Category';
-        }
-
-        $ch = curl_init();
-        curl_setopt($ch,CURLOPT_URL, $category_url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json", "Accept: application/json", "Authorization: Basic " . $authentication . ""));
-        curl_setopt($ch,CURLOPT_POSTFIELDS, $jsonBody);
-        $_curl_exe = curl_exec($ch);
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close ($ch); 
-
-        $decoded = json_decode($_curl_exe, true);
-
-        if ($httpcode !== 204 && $httpcode !== 201) {
-            if (!empty($decoded['Errors'])) {
-                foreach ($decoded['Errors'] as $error) {
-                    $error_message = $error['Message'] . ', ';
-                }
-            }
-        }        
-
-        return;
-
-    }
-
-    public static function checkError($jsonBody = null, $response = null, $productId = null, $delete = null, $type = null) {
         $errorQueue = Mage::getModel('integracommerce/update')->load($productId, 'product_id');
 
         $errorProductId = $errorQueue->getProductId();
@@ -494,6 +382,12 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             return;
         }
 
+        if (is_array($response)) {
+            foreach ($response['Errors'] as $error) {
+                $response = $error['Message'] . '. ';
+            };
+        }
+
         if ($type == 'product') {
             $errorQueue->setProductBody($jsonBody);
             $errorQueue->setProductError($response);
@@ -509,8 +403,47 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $errorQueue->save();
+    }
 
-        return;
+    public static function callCurl($method, $url, $body = null)
+    {
+        $apiUser = Mage::getStoreConfig('integracommerce/general/api_user', Mage::app()->getStore());
+        $apiPassword = Mage::getStoreConfig('integracommerce/general/api_password', Mage::app()->getStore());
+        $authentication = base64_encode($apiUser . ':' . $apiPassword);
+
+        $headers = array(
+            "Content-type: application/json",
+            "Accept: application/json",
+            "Authorization: Basic " . $authentication
+        );
+
+        if ($method == "GET") {
+            $zendMethod = Zend_Http_Client::GET;
+        } elseif ($method == "POST") {
+            $zendMethod = Zend_Http_Client::POST;
+        } elseif ($method == "PUT") {
+            $zendMethod = Zend_Http_Client::PUT;
+        }
+
+        $connection = new Varien_Http_Adapter_Curl();
+        if ($method == "PUT") {
+            //ADICIONA AS OPTIONS MANUALMENTE POIS NATIVAMENTE O WRITE NAO VERIFICA POR PUT
+            $connection->addOption(CURLOPT_CUSTOMREQUEST, "PUT");
+            $connection->addOption(CURLOPT_POSTFIELDS, $body);
+        }
+
+        $connection->write($zendMethod, $url, '1.0', $headers, $body);
+        $response = $connection->read();
+        $connection->close();
+
+        $httpCode = Zend_Http_Response::extractCode($response);
+        $response = Zend_Http_Response::extractBody($response);
+
+        $response = json_decode($response, true);
+
+        $response['httpCode'] = $httpCode;
+
+        return $response;
     }
 
 }

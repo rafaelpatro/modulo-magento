@@ -1,14 +1,26 @@
 <?php
+/**
+ * PHP version 5
+ * Novapc Integracommerce
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
+ */
 
 class Novapc_Integracommerce_Model_Observer
-{  
+{
 
     public function stockQueue(Varien_Event_Observer $event)
     {
         $item = $event->getEvent()->getItem();
         $product = Mage::getModel('catalog/product')->load($item->getId());
 
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type',Mage::app()->getStore());
+        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if (($exportType == 1 && $product->getData('integracommerce_sync') == 0) && $product->getData('integracommerce_active') == 0) {
             return;
         } else {
@@ -20,14 +32,12 @@ class Novapc_Integracommerce_Model_Observer
                 $insertQueue->save();
             }
         }
-
-        return;
     }  
 
     public function orderQueue(Varien_Event_Observer $event)
     {
         $order = $event->getEvent()->getOrder();
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type',Mage::app()->getStore());
+        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
 
         foreach ($order->getAllItems() as $item) {
             $product = Mage::getModel('catalog/product')->load($item->getProductId());
@@ -46,10 +56,8 @@ class Novapc_Integracommerce_Model_Observer
 
         $integracommerceId = $order->getData('integracommerce_id');
         if (!empty($integracommerceId)) {
-            $response_status = Novapc_Integracommerce_Helper_OrderData::updateOrder($order);
+            $responseStatus = Novapc_Integracommerce_Helper_OrderData::updateOrder($order);
         }
-    
-        return;
     }
 
     public function massproductQueue(Varien_Event_Observer $event)
@@ -88,8 +96,6 @@ class Novapc_Integracommerce_Model_Observer
                 $insertQueue->save();
             }
         }
-
-        return;
     }
 
     public function productQueue(Varien_Event_Observer $event)
@@ -100,7 +106,7 @@ class Novapc_Integracommerce_Model_Observer
             return;
         }
 
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type',Mage::app()->getStore());
+        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if (($exportType == 1 && $product->getData('integracommerce_sync') == 0) && $product->getData('integracommerce_active') == 0) {
            return;
         } else {
@@ -110,10 +116,8 @@ class Novapc_Integracommerce_Model_Observer
                $insertQueue = Mage::getModel('integracommerce/update');
                $insertQueue->setProductId($product->getId());
                $insertQueue->save();
-           }
+            }
         }
-
-        return;
     }  
 
     public function getOrders()
@@ -138,36 +142,8 @@ class Novapc_Integracommerce_Model_Observer
         }
     }      
 
-    public function integraCategories(Varien_Event_Observer $event)
-    {
-        $current_category = $event->getCategory();
-
-        if ($current_category->getData('parent_id') == 2) {
-           $_parent_id = "";
-        } else {
-            $_parent_id = $current_category->getData('parent_id');
-        }
-
-        $body = array();
-        array_push($body,
-            array(
-                "Id" => $current_category->getId(),
-                "Name" => $current_category->getName(),
-                "ParentId" => $_parent_id
-            )
-        );
-
-        Novapc_Integracommerce_Helper_Data::postCategory($body);
-
-        return;
-
-    }    
-
     public function productUpdate()
     {
-        $api_user = Mage::getStoreConfig('integracommerce/general/api_user',Mage::app()->getStore());
-        $api_password = Mage::getStoreConfig('integracommerce/general/api_password',Mage::app()->getStore());
-        $authentication = base64_encode($api_user . ':' . $api_password);
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Update', 'integra_model');
 
         $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, 'put');
@@ -177,28 +153,32 @@ class Novapc_Integracommerce_Model_Observer
             $productModel->save();
             return;
         } else {
-            $queueCollection = Mage::getModel('integracommerce/update')->getCollection()->getAllIds();
-
-            $collection = Mage::getModel('catalog/product')->getCollection()
-                ->addFieldToFilter('entity_id', array('in' => $queueCollection))
-                ->addAttributeToSelect('*');
-
             $alreadyRequested = $productModel->getRequestedHour();
             $requestedDay = $productModel->getRequestedDay();
             $requestedWeek = $productModel->getRequestedWeek();
-            $requested = Novapc_Integracommerce_Helper_IntegrationData::productSelection($collection, $authentication, $alreadyRequested);
+            $requestedInitial = $productModel->getInitialHour();
+            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested);
 
-            if ($alreadyRequested == $requested) {
+            if ($alreadyRequested == $requestedHour) {
                 $requested = 0;
+                $requestedHour = 0;
+            } else {
+                $requested = $requestedHour - $alreadyRequested;
             }
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
+            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
 
-            $productModel->setStatus(Mage::getModel('core/date')->date('Y-m-d H:i:s'));
-            $productModel->setRequestedHour($requested);
+            $productModel->setStatus($requestTime);
+            $productModel->setRequestedHour($requestedHour);
             $productModel->setRequestedDay($requestedDay);
             $productModel->setRequestedWeek($requestedWeek);
+
+            if (empty($requestedInitial)) {
+                $productModel->setInitialHour($requestTime);
+            }
+
             $productModel->save();
 
             return;

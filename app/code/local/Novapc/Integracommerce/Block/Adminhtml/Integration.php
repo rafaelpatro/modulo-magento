@@ -1,30 +1,35 @@
 <?php
 /**
+ * PHP version 5
  * Novapc Integracommerce
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce 
- * @copyright    Copyright (c) 2016 Novapc (http://www.novapc.com.br/)
- * @author       Novapc
- * @version      Release: 1.0.0 
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Block_Adminhtml_Integration extends Mage_Adminhtml_Block_Widget_Container {
+class Novapc_Integracommerce_Block_Adminhtml_Integration extends Mage_Adminhtml_Block_Widget_Container
+{
 
     /**
      * Set template
      */
-      public function __construct() {
+      public function __construct()
+      {
         parent::__construct();
-    }
+      }
 
     /**
      * Prepare button and grid
      *
      * @return Mage_Adminhtml_Block_
      */
-    protected function _prepareLayout() {
-       
+    protected function _prepareLayout()
+    {
         $this->setChild('grid', $this->getLayout()->createBlock('integracommerce/adminhtml_integration_grid', 'integration.grid'));
         return parent::_prepareLayout();
     }
@@ -34,7 +39,8 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration extends Mage_Adminhtml_
      *
      * @return string
      */
-    public function getGridHtml() {
+    public function getGridHtml()
+    {
         return $this->getChildHtml('grid');
     }
 
@@ -43,10 +49,12 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration extends Mage_Adminhtml_
      *
      * @return bool
      */
-    public function isSingleStoreMode() {
+    public function isSingleStoreMode()
+    {
         if (!Mage::app()->isSingleStoreMode()) {
                return false;
         }
+
         return true;
     }
 }

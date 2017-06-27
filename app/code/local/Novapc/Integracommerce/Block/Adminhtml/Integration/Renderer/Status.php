@@ -1,15 +1,19 @@
 <?php
 /**
- * Acaldeira Mercadolivre 
- * 
- * @category     Acaldeira
- * @package      Acaldeira_Mercadolivre 
- * @copyright    Copyright (c) 2015 MM (http://blog.meumagento.com.br/)
- * @author       MM (Thiago Caldeira de Lima)  
- * @version      Release: 0.1.0 
+ * PHP version 5
+ * Novapc Integracommerce
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract {
+class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
+{
     
     public function render(Varien_Object $row)
     {
@@ -18,7 +22,7 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status extends
             return '<span style="color:red;">'. Mage::helper('integracommerce')->__('A Sincronizar') .'</span>';
         } else {
             $date = strtotime($value);
-            $newformat = date('d/m/Y H:i:s',$date);
+            $newformat = date('d/m/Y H:i:s', $date);
             return '<span>'. $newformat .'</span>';
         }
     }

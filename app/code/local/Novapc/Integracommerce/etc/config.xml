@@ -1,19 +1,22 @@
 <?xml version="1.0"?>
 <!--
 /**
- * MM Ajax 
- * 
- * @category     Novapc
- * @package      Novapc_Integracommerce
- * @copyright    Copyright (c) 2016 NovaPC (http://www.novapc.com.br/)
- * @author       NovaPC
- * @version      Release: 1.0.0
+ * PHP version 5
+ * Novapc Integracommerce
+ *
+ * @category  Magento
+ * @package   Novapc_Integracommerce
+ * @author    Novapc <novapc@novapc.com.br>
+ * @copyright 2017 Integracommerce
+ * @license   https://opensource.org/licenses/osl-3.0.php PHP License 3.0
+ * @version   GIT: 1.0
+ * @link      https://github.com/integracommerce/modulo-magento
  */
 -->
 <config>
 	<modules>
 		<Novapc_Integracommerce>
-			<version>2.0.0</version>
+			<version>2.0.1</version>
 		</Novapc_Integracommerce>
 	</modules>
     <frontend>
@@ -31,10 +34,10 @@
 		<models>
             <integracommerce>
                 <class>Novapc_Integracommerce_Model</class>
-                <resourceModel>integracommerce_mysql4</resourceModel>
+                <resourceModel>integracommerce_resource</resourceModel>
             </integracommerce>
-            <integracommerce_mysql4>
-                <class>Novapc_Integracommerce_Model_Mysql4</class>
+            <integracommerce_resource>
+                <class>Novapc_Integracommerce_Model_Resource</class>
                 <entities>
                     <integration>
                         <table>npcintegra_integration</table>
@@ -55,7 +58,7 @@
                         <table>npcintegra_sku_attributes</table>
                     </sku>
                 </entities>
-            </integracommerce_mysql4>
+            </integracommerce_resource>
         </models>
 		<events>
             <catalog_product_attribute_update_before>
