@@ -222,11 +222,21 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
 
         $weight = $product->getData($loadedAttrs['7']);
+        $weightUnit = Mage::getStoreConfig('integracommerce/general/weight_unit', Mage::app()->getStore());
 
         if (strstr($weight, ".") !== false) {
-            $weight = (float) $product->getData($loadedAttrs['7']);
+            if ($weightUnit == 'grama') {
+                $weight = strstr($weight, '.', true);
+                $weight = $weight / 1000;
+            } else {
+                $weight = (float) $product->getData($loadedAttrs['7']);
+            }
         } else {
-            $weight = (int) $product->getData($loadedAttrs['7']);
+            if ($weightUnit == 'grama') {
+                $weight = $weight / 1000;
+            } else {
+                $weight = (int) $product->getData($loadedAttrs['7']);
+            }
         }
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
