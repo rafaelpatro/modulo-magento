@@ -100,7 +100,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         try {
             $customer->save();
-        } catch (Exception $e){ 
+        } catch (Exception $e) {
                 Mage::log('Erro ao criar o cliente. Mensagem: '.$e->getMessage(), null, 'customer_save_error_integracommerce.log');
         }        
 
@@ -274,10 +274,15 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         $subTotal = 0;
         foreach ($order['Products'] as $key => $product) {
-            $mageProduct = Mage::getModel('catalog/product')->loadByAttribute($productControl, $product['IdSku']);
+            if ($productControl == 'sku') {
+                $productId = Mage::getModel('catalog/product')->getResource()->getIdBySku($product['IdSku']);
+            } else {
+                $productId = $product['IdSku'];
+            }
 
-            $productId = $mageProduct->getId();
-            if (empty($productId)) {
+            $mageProduct = Mage::getModel('catalog/product')->load($productId);
+
+            if (!$mageProduct->getId()) {
                 continue;
             }
 
@@ -507,8 +512,16 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $line[] = $_line;
         }
 
-        if (count($line) < 2 && $status !== 'delivered') {
-            $integraModel->setIntegraError('Informações Inválidas, verifique os campos.');
+        try {
+            if (($status == $invoiceStatus || $status == 'processing') && count($line) < 4) {
+                throw new Exception("Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.");
+            } elseif (($status == $shippingStatus || $status == 'complete') && count($line) !== 5) {
+                throw new Exception("Não foi possivel enviar os dados de Rastreio. Informações inválidas.");
+            } elseif ($status == 'shipexception' && count($line) !== 2) {
+                throw new Exception("Não foi possivel enviar os dados de Falha no Envio. Informações inválidas.");
+            }
+        } catch (Exception $e) {
+            $integraModel->setIntegraError($e->getMessage());
             $integraModel->save();
             return;
         }
