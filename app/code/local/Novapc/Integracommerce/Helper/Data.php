@@ -34,7 +34,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
-        if ($productControl == 2) {
+        if ($productControl == 'sku') {
             $idSku = $product->getData('sku');
         } else {
             $idSku = $product->getId();
@@ -133,7 +133,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
-        if ($productControl == 2) {
+        if ($productControl == 'sku') {
             $idProduct = $product->getData('sku');
         } else {
             $idProduct = $product->getId();
@@ -241,7 +241,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
-        if ($productControl == 2) {
+        if ($productControl == 'sku') {
             $idSku = $product->getData('sku');
         } else {
             $idSku = $product->getId();
@@ -346,7 +346,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
-        if ($productControl == 2) {
+        if ($productControl == 'sku') {
             $idSku = $product->getData('sku');
         } else {
             $idSku = $product->getId();

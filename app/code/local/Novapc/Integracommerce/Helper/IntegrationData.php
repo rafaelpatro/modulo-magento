@@ -171,7 +171,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
             $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
-            if ($productControl == 2) {
+            if ($productControl == 'sku') {
                 $idProduct = $product->getData('sku');
             } else {
                 $idProduct = $product->getId();
@@ -226,7 +226,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
             $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
-            if ($productControl == 2) {
+            if ($productControl == 'sku') {
                 $idProduct = $configurableProduct->getData('sku');
             } else {
                 $idProduct = $configurableProduct->getId();
