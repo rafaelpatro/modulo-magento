@@ -393,9 +393,13 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         if (is_array($response)) {
-            foreach ($response['Errors'] as $error) {
-                $response = $error['Message'] . '. ';
-            };
+            if (!empty($response['Errors'])) {
+                foreach ($response['Errors'] as $error) {
+                    $response = $error['Message'] . '. ';
+                };
+            } else {
+                $response = json_encode($response);
+            }
         }
 
         if ($type == 'product') {
@@ -441,6 +445,10 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $connection->addOption(CURLOPT_CUSTOMREQUEST, "PUT");
             $connection->addOption(CURLOPT_POSTFIELDS, $body);
         }
+
+        $connection->setConfig(array(
+            'timeout'   => 30
+        ));
 
         $connection->write($zendMethod, $url, '1.0', $headers, $body);
         $response = $connection->read();

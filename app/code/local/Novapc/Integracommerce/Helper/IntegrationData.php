@@ -169,6 +169,10 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
             }
 
+            if ($productType == 'configurable') {
+                continue;
+            }
+
             $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
 
             if ($productControl == 'sku') {

@@ -55,7 +55,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         }
 
         if (!empty($customerDoc)) {
-            $customer = Mage::getModel('customer/customer')->load($customerDoc, 'taxvat');
+            $customer = Mage::getModel('customer/customer')
+                ->getCollection()
+                ->addFieldToFilter('taxvat', $customerDoc)->load()->getFirstItem();
             $customerId = $customer->getId();
         }
 
@@ -206,6 +208,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $mageOrder->setCustomer_email($customer->getEmail())
             ->setCustomerFirstname($customer->getFirstname())
             ->setCustomerLastname($customer->getLastname())
+            ->setCustomerTaxvat($customer->getTaxvat())
             ->setCustomerGroupId($customer->getGroupId())
             ->setCustomer_is_guest(0)
             ->setCustomer($customer);
@@ -271,6 +274,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setPo_number(' – ');
         $mageOrder->setPayment($orderPayment);
 
+        $weightAttribute = Mage::getStoreConfig('integracommerce/attributes/weight', Mage::app()->getStore());
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         $subTotal = 0;
         foreach ($order['Products'] as $key => $product) {
@@ -300,6 +304,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 ->setName($mageProduct->getName())
                 ->setSku($mageProduct->getSku())
                 ->setPrice($newPrice)
+                ->setWeight($mageProduct->getData($weightAttribute))
                 ->setBasePrice($newPrice)
                 ->setOriginalPrice($newPrice)
                 ->setRowTotal($rowTotal)
@@ -316,7 +321,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         $mageOrder->setData('integracommerce_id', $order['IdOrder']);
 
-        $comment = $mageOrder->addStatusHistoryComment("Código do Pedido Integracommerce: " . $order['IdOrder'] . "<br>" . "Código do Pedido Marketplace: " . $order['IdOrderMarketplace'], false);
+        $estimatedDate = substr($order['EstimatedDeliveryDate'], 0, 10);
+        $estimatedDate = DateTime::createFromFormat('Y-m-d', $estimatedDate);
+        $estimatedDate = $estimatedDate->format('d/m/Y');
+        
+        $comment = $mageOrder->addStatusHistoryComment("Código do Pedido Integracommerce: " .
+            $order['IdOrder'] . "<br>" . "Código do Pedido Marketplace: " .
+            $order['IdOrderMarketplace'] . "<br>" . "Data Estimada de Entrega: " . $estimatedDate, false);
         $comment->setIsCustomerNotified(false);
 
         try {
@@ -331,13 +342,14 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         $entityId = $mageOrder->getEntityId();
         $updateIncrementId = $mageOrder->getIncrementId();
+        
         if (!empty($updateIncrementId)) {
             self::updateIntegraOrder($order['IdOrder'], $entityId);
 
             $status = Mage::getStoreConfig('integracommerce/order_status/approved', Mage::app()->getStore());
             if ($status !== 'keepstatus') {
                 $states = array();
-                $stateCollection = Mage::getResourceModel('sales/order_status_collection')->addStatusFilter($status);
+                $stateCollection = self::orderStatusFilter($status);
                 foreach ($stateCollection as $state) {
                     $states[] = $state->getState();
                 }
@@ -498,103 +510,109 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $integraModel = Mage::getModel('integracommerce/order')->load($order->getData('integracommerce_id'), 'integra_id');
         $url = 'https://' . $environment . '.integracommerce.com.br/api/Order';
 
-        $status = $order->getStatus();
-        $comment = self::getHistoryByStatus($order, $status);
-        $commentData = $comment->getData('comment');
-
-        $lines = explode('|', $commentData);
-        if ((empty($lines) && $status !== 'delivered') || empty($commentData)) {
-            return;
-        }
-
-        $line = array();
-        foreach ($lines as $_line) {
-            $line[] = $_line;
-        }
-
         try {
-            if (($status == $invoiceStatus || $status == 'processing') && count($line) < 4) {
+            $status = $order->getStatus();
+            $comment = self::getHistoryByStatus($order, $status);
+            $commentData = $comment->getData('comment');
+
+            $lines = explode('|', $commentData);
+            if ((empty($lines) && $status !== 'delivered') || empty($commentData)) {
+                return;
+            }
+
+            $line = array();
+            foreach ($lines as $_line) {
+                $line[] = $_line;
+            }
+
+            if ($status == $invoiceStatus && count($line) < 4) {
                 throw new Exception("Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.");
-            } elseif (($status == $shippingStatus || $status == 'complete') && count($line) !== 5) {
+            } elseif ($status == $shippingStatus && count($line) !== 5) {
                 throw new Exception("Não foi possivel enviar os dados de Rastreio. Informações inválidas.");
             } elseif ($status == 'shipexception' && count($line) !== 2) {
                 throw new Exception("Não foi possivel enviar os dados de Falha no Envio. Informações inválidas.");
             }
+
+            if ((($invoiceStatus && !empty($invoiceStatus)) && $invoiceStatus == $status) || $status == 'processing') {
+                //CHECANDO DATA DE EMISSAO DA FATURA
+                $return = self::checkDate($line[2], $integraModel);
+                $line[2] = $return;
+
+                if (strlen($line[3]) < 44) {
+                    $line[3] = str_pad($line[3], 44, "0");
+                }
+
+                $body = array(
+                    "IdOrder" => $order->getData('integracommerce_id'),
+                    "OrderStatus" => "INVOICED",
+                    "InvoicedNumber" => $line[0],
+                    "InvoicedLine" => $line[1],
+                    "InvoicedIssueDate" => $line[2],
+                    "InvoicedKey" => $line[3],
+                    "InvoicedDanfeXml" => (empty($line[4]) ? "" : $line[4])
+                );
+            } elseif ((($shippingStatus && !empty($shippingStatus)) && $shippingStatus == $status) || $status == 'complete') {
+                //CHECANDO DATA ESTIMADA DE ENTREGA
+                $return = self::checkDate($line[2], $integraModel);
+                $line[2] = $return;
+
+                //CHECANDO DATA DE ENTREGA A TRANSPORTADORA
+                $return = self::checkDate($line[3], $integraModel);
+                $line[3] = $return;
+
+                $body = array(
+                    "IdOrder" => $order->getData('integracommerce_id'),
+                    "OrderStatus" =>"SHIPPED",
+                    "ShippedTrackingUrl" => (empty($line[0]) ? "" : $line[0]),
+                    "ShippedTrackingProtocol" => (empty($line[1]) ? "" : $line[1]),
+                    "ShippedEstimatedDelivery" => $line[2],
+                    "ShippedCarrierDate" => $line[3],
+                    "ShippedCarrierName" => $line[4]
+                );
+            } elseif ($status == 'delivered') {
+                //CHECANDO DATA ESTIMADA DE ENTREGA
+                $return = self::checkDate($commentData, $integraModel);
+                $deliveredDate = $return;
+
+                $body = array(
+                    "IdOrder" => $order->getData('integracommerce_id'),
+                    "OrderStatus" => "DELIVERED",
+                    "DeliveredDate" => $deliveredDate
+                );
+            } elseif ($status == 'shipexception') {
+                $return = self::checkDate($line[1], $integraModel);
+                $line[1] = $return;
+
+                $body = array(
+                    "IdOrder" => $order->getData('integracommerce_id'),
+                    "OrderStatus" => "SHIPMENT_EXCEPTION",
+                    "ShipmentExceptionObservation" => $line[0],
+                    "ShipmentExceptionOccurrenceDate" => $line[1]
+                );
+            }
+
+            if (isset($body)) {
+                $jsonBody = json_encode($body);
+                $return = Novapc_Integracommerce_Helper_Data::callCurl("PUT", $url, $jsonBody);
+
+                if ($return['httpCode'] !== 204) {
+                    if (!empty($return['Errors'])) {
+                        foreach ($return['Errors'] as $error) {
+                            $return = $error['Message'] . '. ';
+                        };
+                    } elseif ($return['httpCode'] == 200) {
+                        $return = 'Dados inseridos';
+                    } else {
+                        $return = json_encode($return);
+                    }
+                    $integraModel->setIntegraError($return);
+                    $integraModel->save();
+                }
+            }
+
         } catch (Exception $e) {
             $integraModel->setIntegraError($e->getMessage());
             $integraModel->save();
-            return;
-        }
-
-        if ((($invoiceStatus && !empty($invoiceStatus)) && $invoiceStatus == $status) || $status == 'processing') {
-            //CHECANDO DATA DE EMISSAO DA FATURA
-            $return = self::checkDate($line[2], $integraModel);
-            $line[2] = $return;
-
-            if (strlen($line[3]) < 44) {
-                $line[3] = str_pad($line[3], 44, "0");
-            }
-
-            $body = array(
-                "IdOrder" => $order->getData('integracommerce_id'),
-                "OrderStatus" => "INVOICED",
-                "InvoicedNumber" => $line[0],
-                "InvoicedLine" => $line[1],
-                "InvoicedIssueDate" => $line[2],
-                "InvoicedKey" => $line[3],
-                "InvoicedDanfeXml" => (empty($line[4]) ? "" : $line[4])
-            );
-        } elseif ((($shippingStatus && !empty($shippingStatus)) && $shippingStatus == $status) || $status == 'complete') {
-            //CHECANDO DATA ESTIMADA DE ENTREGA
-            $return = self::checkDate($line[2], $integraModel);
-            $line[2] = $return;
-
-            //CHECANDO DATA DE ENTREGA A TRANSPORTADORA
-            $return = self::checkDate($line[3], $integraModel);
-            $line[3] = $return;
-
-            $body = array(
-                "IdOrder" => $order->getData('integracommerce_id'),
-                "OrderStatus" =>"SHIPPED",
-                "ShippedTrackingUrl" => (empty($line[0]) ? "" : $line[0]),
-                "ShippedTrackingProtocol" => (empty($line[1]) ? "" : $line[1]),
-                "ShippedEstimatedDelivery" => $line[2],
-                "ShippedCarrierDate" => $line[3],
-                "ShippedCarrierName" => $line[4]
-            );
-        } elseif ($status == 'delivered') {
-            //CHECANDO DATA ESTIMADA DE ENTREGA
-            $return = self::checkDate($commentData, $integraModel);
-            $deliveredDate = $return;
-
-            $body = array(
-                "IdOrder" => $order->getData('integracommerce_id'),
-                "OrderStatus" => "DELIVERED",
-                "DeliveredDate" => $deliveredDate
-            );
-        } elseif ($status == 'shipexception') {
-            $return = self::checkDate($line[1], $integraModel);
-            $line[1] = $return;
-
-            $body = array(
-                "IdOrder" => $order->getData('integracommerce_id'),
-                "OrderStatus" => "SHIPMENT_EXCEPTION",
-                "ShipmentExceptionObservation" => $line[0],
-                "ShipmentExceptionOccurrenceDate" => $line[1]
-            );
-        }
-
-        if (isset($body)) {
-            $jsonBody = json_encode($body);
-            $return = Novapc_Integracommerce_Helper_Data::callCurl("PUT", $url, $jsonBody);
-
-            if ($return['httpCode'] !== 204) {
-                foreach ($return['Errors'] as $error) {
-                    $return = $error['Message'] . '. ';
-                };
-                $integraModel->setIntegraError($return);
-                $integraModel->save();
-            }
         }
     }
 
@@ -616,6 +634,20 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         }
 
         return false;
+    }
+
+    public static function orderStatusFilter($status)
+    {
+        $collection = Mage::getResourceModel('sales/order_status_collection');
+        $collection->getSelect()->joinLeft(
+            array('state_table' => 'sales_order_status_state'),
+            'main_table.status=state_table.status',
+            array('state', 'is_default')
+        );
+
+        $collection->getSelect()->where('state_table.status=?', $status);
+
+        return $collection;
     }
 
 }

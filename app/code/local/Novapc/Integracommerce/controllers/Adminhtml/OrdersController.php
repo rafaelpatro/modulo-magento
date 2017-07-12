@@ -69,6 +69,7 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
     public function massSearchAction()
     {
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
         $orderModel = Mage::getModel('integracommerce/queue')->load('Orderid', 'integra_model');
         $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, 'getid');
 
@@ -101,7 +102,7 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
                 $integraId = $checkOrder->getIntegraId();
 
-                $url = "https://api.integracommerce.com.br/api/Order/" . $integraId;
+                $url = "https://" . $environment . ".integracommerce.com.br/api/Order/" . $integraId;
 
                 $return = Novapc_Integracommerce_Helper_Data::callCurl("GET", $url, null);
 
