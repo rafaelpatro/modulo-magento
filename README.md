@@ -1,9 +1,11 @@
 # Módulo de integração Integracommerce e Magento
 
 ### Versão Atual
-#### 2.0.1
+#### 2.0.2
 
-
+**IMPORTANTE**
+===============
+> Se há instalado a versão 2.0.1 é necessário acessar as configurações do módulo navegando até "Integracommerce -> Configuração", na aba "Configurações de Pedidos" vá até o campo "Modelo de Nota Fiscal" e selecione a opção "Formato 1" para utilizar o modelo de envio de Nota Fiscal antigo. Para maiores informações contate nosso suporte.
 
 ## Descrição
 
