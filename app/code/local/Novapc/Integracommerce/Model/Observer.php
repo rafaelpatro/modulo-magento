@@ -20,37 +20,35 @@ class Novapc_Integracommerce_Model_Observer
         $item = $event->getEvent()->getItem();
         $product = Mage::getModel('catalog/product')->load($item->getId());
 
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
-        if (($exportType == 1 && $product->getData('integracommerce_sync') == 0) && $product->getData('integracommerce_active') == 0) {
+        if ($product->getData('integracommerce_active') == 0) {
             return;
-        } else {
-            $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-            $queueProductId = $insertQueue->getProductId();
-            if (!$queueProductId || empty($queueProductId)) {
-                $insertQueue = Mage::getModel('integracommerce/update');
-                $insertQueue->setProductId($product->getId());
-                $insertQueue->save();
-            }
+        }
+
+        $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
+        $queueProductId = $insertQueue->getProductId();
+        if (!$queueProductId || empty($queueProductId)) {
+            $insertQueue = Mage::getModel('integracommerce/update');
+            $insertQueue->setProductId($product->getId());
+            $insertQueue->save();
         }
     }  
 
     public function orderQueue(Varien_Event_Observer $event)
     {
         $order = $event->getEvent()->getOrder();
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
 
         foreach ($order->getAllItems() as $item) {
             $product = Mage::getModel('catalog/product')->load($item->getProductId());
-            if (($exportType == 1 && $product->getData('integracommerce_sync') == 0) && $product->getData('integracommerce_active') == 0) {
-                continue;
-            } else {
-                $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-                $queueProductId = $insertQueue->getProductId();
-                if (!$queueProductId || empty($queueProductId)) {
-                    $insertQueue = Mage::getModel('integracommerce/update');
-                    $insertQueue->setProductId($product->getId());
-                    $insertQueue->save();
-                }
+            if ($product->getData('integracommerce_active') == 0) {
+                return;
+            }
+
+            $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
+            $queueProductId = $insertQueue->getProductId();
+            if (!$queueProductId || empty($queueProductId)) {
+                $insertQueue = Mage::getModel('integracommerce/update');
+                $insertQueue->setProductId($product->getId());
+                $insertQueue->save();
             }
         }
 
@@ -106,17 +104,12 @@ class Novapc_Integracommerce_Model_Observer
             return;
         }
 
-        $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
-        if (($exportType == 1 && $product->getData('integracommerce_sync') == 0) && $product->getData('integracommerce_active') == 0) {
-           return;
-        } else {
-           $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-            $queueProductId = $insertQueue->getProductId();
-            if (!$queueProductId || empty($queueProductId)) {
-               $insertQueue = Mage::getModel('integracommerce/update');
-               $insertQueue->setProductId($product->getId());
-               $insertQueue->save();
-            }
+        $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
+        $queueProductId = $insertQueue->getProductId();
+        if (!$queueProductId || empty($queueProductId)) {
+           $insertQueue = Mage::getModel('integracommerce/update');
+           $insertQueue->setProductId($product->getId());
+           $insertQueue->save();
         }
     }  
 

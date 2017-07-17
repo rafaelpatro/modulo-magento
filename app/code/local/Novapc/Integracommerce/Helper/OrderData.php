@@ -508,6 +508,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $invoiceStatus = Mage::getStoreConfig('integracommerce/order_status/nota_fiscal', Mage::app()->getStore());
         $shippingStatus = Mage::getStoreConfig('integracommerce/order_status/dados_rastreio', Mage::app()->getStore());
         $integraModel = Mage::getModel('integracommerce/order')->load($order->getData('integracommerce_id'), 'integra_id');
+        $formatoNfe = Mage::getStoreConfig('integracommerce/order_status/nfe_model', Mage::app()->getStore());
         $url = 'https://' . $environment . '.integracommerce.com.br/api/Order';
 
         try {
@@ -525,7 +526,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 $line[] = $_line;
             }
 
-            if ($status == $invoiceStatus && count($line) < 4) {
+            if ($status == $invoiceStatus && count($line) < 4 && $formatoNfe == 'old') {
                 throw new Exception("Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.");
             } elseif ($status == $shippingStatus && count($line) !== 5) {
                 throw new Exception("Não foi possivel enviar os dados de Rastreio. Informações inválidas.");
@@ -533,13 +534,33 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 throw new Exception("Não foi possivel enviar os dados de Falha no Envio. Informações inválidas.");
             }
 
-            if ((($invoiceStatus && !empty($invoiceStatus)) && $invoiceStatus == $status) || $status == 'processing') {
-                //CHECANDO DATA DE EMISSAO DA FATURA
-                $return = self::checkDate($line[2], $integraModel);
-                $line[2] = $return;
+            if (($invoiceStatus && !empty($invoiceStatus)) && $invoiceStatus == $status) {
+                //VERIFICANDO FORMATO UTILIZADO
+                if ($formatoNfe == 'new') {
+                    $preparedNfe = self::nfeFormat($commentData);
+                    if (empty($preparedNfe)) {
+                        throw new Exception("Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.");
+                    }
 
-                if (strlen($line[3]) < 44) {
-                    $line[3] = str_pad($line[3], 44, "0");
+                    $line[0] = $preparedNfe['numeroNota'];
+                    $line[1] = $preparedNfe['serieNota'];
+                    $return = self::checkDate($preparedNfe['dataEmissaoNota'], $integraModel);
+                    $line[2] = $return;
+                    if (strlen($preparedNfe['chaveNota']) < 44) {
+                        $line[3] = str_pad($preparedNfe['chaveNota'], 44, "0");
+                    } else {
+                        $line[3] = $preparedNfe['chaveNota'];
+                    }
+
+                    $line[4] = $preparedNfe['xmlNota'];
+                } else {
+                    //CHECANDO DATA DE EMISSAO DA FATURA
+                    $return = self::checkDate($line[2], $integraModel);
+                    $line[2] = $return;
+
+                    if (strlen($line[3]) < 44) {
+                        $line[3] = str_pad($line[3], 44, "0");
+                    }
                 }
 
                 $body = array(
@@ -551,7 +572,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                     "InvoicedKey" => $line[3],
                     "InvoicedDanfeXml" => (empty($line[4]) ? "" : $line[4])
                 );
-            } elseif ((($shippingStatus && !empty($shippingStatus)) && $shippingStatus == $status) || $status == 'complete') {
+            } elseif (($shippingStatus && !empty($shippingStatus)) && $shippingStatus == $status) {
                 //CHECANDO DATA ESTIMADA DE ENTREGA
                 $return = self::checkDate($line[2], $integraModel);
                 $line[2] = $return;
@@ -623,6 +644,31 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $mageOrder = Mage::getModel('sales/order')->load($integraOrder->getMagentoOrderId());
 
         return array($integraOrder,$mageCustomer,$mageOrder);
+    }
+
+    public static function nfeFormat($commentData)
+    {
+        preg_match('/^Nota/', $commentData, $checkData, PREG_OFFSET_CAPTURE);
+        if (empty($checkData)) {
+            return;
+        }
+
+        $preparedArray = array();
+        $commentArray = explode("\n", $commentData);
+        $preparedArray['numeroNota'] = substr($commentArray[0], 13);
+        $preparedArray['serieNota'] = substr($commentArray[1], 7);
+        $preparedArray['dataEmissaoNota'] = substr($commentArray[2], 18);
+        $preparedArray['chaveNota'] = substr($commentArray[3], 17);
+        if (empty($preparedArray['chaveNota']) || preg_match("/[a-z]/i", $preparedArray['chaveNota'])) {
+            $preparedArray['chaveNota'] = substr($commentArray[4], 17);
+        }
+
+        $preparedArray['xmlNota'] = substr($commentArray[5], 15);
+        if (empty($preparedArray['xmlNota'])) {
+            $preparedArray['xmlNota'] = substr($commentArray[5], 13);
+        }
+
+        return $preparedArray;
     }
 
     public static function getHistoryByStatus($order, $statusId)

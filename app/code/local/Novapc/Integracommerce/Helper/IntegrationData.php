@@ -96,6 +96,8 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                             ->addFieldToFilter('integracommerce_active', 0)
                             ->addAttributeToSelect('*');
 
+            $collection->getSelect()->limit(300);
+
             $return = self::productSelection($collection, $requested);
         }
 
