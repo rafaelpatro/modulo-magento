@@ -15,11 +15,20 @@
 $installer = $this;
 $installer->startSetup();
 
-$installer->run(
-    "ALTER TABLE  `npcintegra_integration` ADD  `requested_hour` int( 11 ) NULL DEFAULT 0;
-    ALTER TABLE  `npcintegra_integration` ADD  `requested_day` int( 11 ) NULL DEFAULT 0;
-    ALTER TABLE  `npcintegra_integration` ADD  `requested_week` int( 11 ) NULL DEFAULT 0;
-    ALTER TABLE  `npcintegra_integration` ADD  `available` int( 1 ) NULL DEFAULT 1;"
-);
+if (!$installer->getConnection()->tableColumnExists('npcintegra_integration', 'requested_hour')) {
+    $installer->run("ALTER TABLE  `npcintegra_integration` ADD  `requested_hour` int( 11 ) NULL DEFAULT 0");
+}
+
+if (!$installer->getConnection()->tableColumnExists('npcintegra_integration', 'requested_day')) {
+    $installer->run("ALTER TABLE  `npcintegra_integration` ADD  `requested_day` int( 11 ) NULL DEFAULT 0");
+}
+
+if (!$installer->getConnection()->tableColumnExists('npcintegra_integration', 'requested_week')) {
+    $installer->run("ALTER TABLE  `npcintegra_integration` ADD  `requested_week` int( 11 ) NULL DEFAULT 0");
+}
+
+if (!$installer->getConnection()->tableColumnExists('npcintegra_integration', 'available')) {
+    $installer->run("ALTER TABLE  `npcintegra_integration` ADD  `available` int( 1 ) NULL DEFAULT 1");
+}
 
 $installer->endSetup();
