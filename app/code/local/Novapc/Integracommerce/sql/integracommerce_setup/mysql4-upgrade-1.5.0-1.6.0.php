@@ -12,7 +12,7 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-$installer = $this; 
+$installer = $this;
 $installer->startSetup();
 
 $attributesSets = Mage::getResourceModel('eav/entity_attribute_set_collection')->setEntityTypeFilter(4);
@@ -41,11 +41,18 @@ $installer->addAttribute('catalog_product', $codigo, $config);
 
 $attributeId = $installer->getAttributeId($entityTypeId, 'integracommerce_active');
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'catalog_product_entity_int';
+} else {
+    $tableName = 'catalog_product_entity_int';
+}
+
 $installer->run(
-    "INSERT IGNORE INTO `{$installer->getTable('catalog_product_entity_int')}`
+    "INSERT IGNORE INTO `{$tableName}`
     (`entity_type_id`, `attribute_id`, `entity_id`, `value`)
     SELECT '{$entityTypeId}', '{$attributeId}', `entity_id`, '0'
-        FROM `{$installer->getTable('catalog_product_entity')}`;"
+        FROM `{$tableName}`;"
 );
 
 $installer->endSetup();

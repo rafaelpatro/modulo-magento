@@ -15,24 +15,35 @@
 $installer = $this;
 $installer->startSetup();
 
-$installer->run(
-    "RENAME TABLE `npcintegra_queue` TO `npcintegra_order_queue`;
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $oldQueue = $tablePrefix . 'npcintegra_queue';
+    $newQueue = $tablePrefix . 'npcintegra_order_queue';
+    $orderTable = $tablePrefix . 'npcintegra_order';
+} else {
+    $oldQueue = 'npcintegra_queue';
+    $newQueue = 'npcintegra_order_queue';
+    $orderTable = 'npcintegra_order';
+}
 
-    ALTER TABLE `npcintegra_order_queue` CHANGE `identificator` `integra_model` varchar(50) NULL DEFAULT NULL;
-    ALTER TABLE `npcintegra_order_queue` CHANGE `sent_json` `status` timestamp NULL DEFAULT NULL;
-    ALTER TABLE `npcintegra_order_queue` CHANGE `created_at` `requested_hour` int( 11 ) NULL DEFAULT 0;
-    ALTER TABLE `npcintegra_order_queue` CHANGE `last_update` `requested_day` int( 11 ) NULL DEFAULT 0;
-    ALTER TABLE `npcintegra_order_queue` CHANGE `type` `requested_week` int( 11 ) NULL DEFAULT 0;
-    ALTER TABLE `npcintegra_order_queue` CHANGE `done` `available` int( 1 ) NULL DEFAULT 0;
+$installer->run(
+    "RENAME TABLE `" . $oldQueue . "` TO `" . $newQueue . "`;
+
+    ALTER TABLE `" . $newQueue . "` CHANGE `identificator` `integra_model` varchar(50) NULL DEFAULT NULL;
+    ALTER TABLE `" . $newQueue . "` CHANGE `sent_json` `status` timestamp NULL DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE `" . $newQueue . "` CHANGE `created_at` `requested_hour` int( 11 ) NULL DEFAULT 0;
+    ALTER TABLE `" . $newQueue . "` CHANGE `last_update` `requested_day` int( 11 ) NULL DEFAULT 0;
+    ALTER TABLE `" . $newQueue . "` CHANGE `type` `requested_week` int( 11 ) NULL DEFAULT 0;
+    ALTER TABLE `" . $newQueue . "` CHANGE `done` `available` int( 1 ) NULL DEFAULT 0;
     
-    ALTER TABLE  `npcintegra_order` ADD  `mage_error` varchar(1000) NULL DEFAULT NULL;
-    ALTER TABLE  `npcintegra_order` ADD  `integra_error` varchar(1000) NULL DEFAULT NULL;
+    ALTER TABLE  `" . $orderTable . "` ADD  `mage_error` varchar(1000) NULL DEFAULT NULL;
+    ALTER TABLE  `" . $orderTable . "` ADD  `integra_error` varchar(1000) NULL DEFAULT NULL;
     
-    INSERT INTO `npcintegra_order_queue` 
+    INSERT INTO `" . $newQueue . "` 
     (`integra_model`, `status`,`requested_hour` , `requested_day`, `requested_week`, `available`) 
     VALUES ('Order', NULL, NULL, NULL, NULL, NULL);
     
-    INSERT INTO `npcintegra_order_queue` 
+    INSERT INTO `" . $newQueue . "` 
     (`integra_model`, `status`,`requested_hour` , `requested_day`, `requested_week`, `available`) 
     VALUES ('Orderid', NULL, NULL, NULL, NULL, NULL);"
 );

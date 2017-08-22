@@ -12,16 +12,23 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-$installer = $this; 
+$installer = $this;
 $installer->startSetup();
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'npcintegra_queue';
+} else {
+    $tableName = 'npcintegra_queue';
+}
+
 $installer->run(
-    "CREATE TABLE IF NOT EXISTS `npcintegra_queue` (
+    "CREATE TABLE IF NOT EXISTS `". $tableName . "` (
       `entity_id` int(11) AUTO_INCREMENT PRIMARY KEY,
       `identificator` varchar(245) NULL DEFAULT NULL,
       `sent_json` varchar(600) NOT NULL,
-      `created_at` timestamp NULL DEFAULT NULL,
-      `last_update` timestamp NULL DEFAULT NULL,
+      `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+      `last_update` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
       `type` varchar(100) NULL DEFAULT NULL,
       `done` int(1) NULL DEFAULT NULL
       )"

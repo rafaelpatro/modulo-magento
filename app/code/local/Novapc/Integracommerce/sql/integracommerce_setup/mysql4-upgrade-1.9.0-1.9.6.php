@@ -12,17 +12,24 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-$installer = $this; 
+$installer = $this;
 $installer->startSetup();
 
-$installer->run(
-    "TRUNCATE TABLE `npcintegra_integration`;
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'npcintegra_integration';
+} else {
+    $tableName = 'npcintegra_integration';
+}
 
-    ALTER TABLE `npcintegra_integration` MODIFY `status` timestamp NULL DEFAULT NULL;
+$installer->run(
+    "TRUNCATE TABLE `". $tableName . "`;
+
+    ALTER TABLE `" . $tableName . "` MODIFY `status` timestamp NULL DEFAULT CURRENT_TIMESTAMP;
     
-    INSERT INTO `npcintegra_integration` (`integra_model`, `status`) VALUES ('Category', NULL);
-    INSERT INTO `npcintegra_integration` (`integra_model`, `status`) VALUES ('Product Insert', NULL);
-    INSERT INTO `npcintegra_integration` (`integra_model`, `status`) VALUES ('Product Update', NULL);"
+    INSERT INTO `" . $tableName . "` (`integra_model`, `status`) VALUES ('Category', NULL);
+    INSERT INTO `" . $tableName . "` (`integra_model`, `status`) VALUES ('Product Insert', NULL);
+    INSERT INTO `" . $tableName . "` (`integra_model`, `status`) VALUES ('Product Update', NULL);"
 );
 
 $installer->endSetup();

@@ -15,9 +15,18 @@
 $installer = $this;
 $installer->startSetup();
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $integrationTable = $tablePrefix . 'npcintegra_integration';
+    $queueTable = $tablePrefix . 'npcintegra_order_queue';
+} else {
+    $integrationTable = 'npcintegra_integration';
+    $queueTable = 'npcintegra_order_queue';
+}
+
 $installer->run(
-    "ALTER TABLE  `npcintegra_integration` ADD `initial_hour` timestamp NULL DEFAULT NULL;
-    ALTER TABLE  `npcintegra_order_queue` ADD `initial_hour` timestamp NULL DEFAULT NULL;"
+    "ALTER TABLE  `" . $integrationTable . "` ADD `initial_hour` timestamp NULL DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE  `" . $queueTable . "` ADD `initial_hour` timestamp NULL DEFAULT CURRENT_TIMESTAMP;"
 );
 
 $installer->endSetup();

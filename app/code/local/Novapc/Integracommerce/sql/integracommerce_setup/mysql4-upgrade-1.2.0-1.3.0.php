@@ -12,11 +12,18 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-$installer = $this; 
+$installer = $this;
 $installer->startSetup();
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'npcintegra_attributes';
+} else {
+    $tableName = 'npcintegra_attributes';
+}
+
 $installer->run(
-    " CREATE TABLE IF NOT EXISTS `npcintegra_attributes` (
+    " CREATE TABLE IF NOT EXISTS `" . $tableName . "` (
       `entity_id` int(11) AUTO_INCREMENT PRIMARY KEY,
       `nbm_origin` varchar(245) NULL DEFAULT NULL,
       `nbm_number` varchar(245) NULL DEFAULT NULL,

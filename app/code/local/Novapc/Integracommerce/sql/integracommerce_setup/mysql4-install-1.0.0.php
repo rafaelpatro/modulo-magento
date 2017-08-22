@@ -15,9 +15,16 @@
 $installer = $this;
  
 $installer->startSetup();
- 
+
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'npcintegra_integration';
+} else {
+    $tableName = 'npcintegra_integration';
+}
+
 $installer->run(
-    "CREATE TABLE IF NOT EXISTS `npcintegra_integration` (
+    "CREATE TABLE IF NOT EXISTS `" . $tableName . "` (
       `entity_id` int(11) AUTO_INCREMENT PRIMARY KEY,
       `integra_model` varchar(245) NULL DEFAULT NULL,
       `status` int(1) NULL DEFAULT NULL

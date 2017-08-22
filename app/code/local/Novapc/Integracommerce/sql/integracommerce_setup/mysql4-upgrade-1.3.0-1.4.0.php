@@ -12,11 +12,18 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-$installer = $this; 
+$installer = $this;
 $installer->startSetup();
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'npcintegra_attributes';
+} else {
+    $tableName = 'npcintegra_attributes';
+}
+
 $installer->run(
-    "INSERT INTO `npcintegra_attributes` 
+    "INSERT INTO `". $tableName ."` 
     (`nbm_origin`, `nbm_number`, `warranty`, `brand`, `height`, `width`, `length`, `weight`, `ean`, `ncm`, `isbn`) 
     VALUES (NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);"
 );

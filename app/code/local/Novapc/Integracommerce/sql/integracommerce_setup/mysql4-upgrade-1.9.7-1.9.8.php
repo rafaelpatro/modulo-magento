@@ -19,28 +19,35 @@ $entityTypeId = $installer->getEntityTypeId('catalog_category');
 
 $installer->addAttribute(
     Mage_Catalog_Model_Category::ENTITY, 'integracommerce_active', array(
-    'group'         => 'General Information',
-    'input'         => 'select',
-    'type'          => 'int',
-    'label'         => 'Integracommerce - Sincronizado',
-    'backend'       => '',
-    'default'       => 0,
-    'source'        => 'eav/entity_attribute_source_boolean',
-    'visible'       => true,
-    'required'      => false,
-    'visible_on_front' => false,
-    'user_defined'  =>  true,
-    'global'        => Mage_Catalog_Model_Resource_Eav_Attribute::SCOPE_GLOBAL,
+        'group'         => 'General Information',
+        'input'         => 'select',
+        'type'          => 'int',
+        'label'         => 'Integracommerce - Sincronizado',
+        'backend'       => '',
+        'default'       => 0,
+        'source'        => 'eav/entity_attribute_source_boolean',
+        'visible'       => true,
+        'required'      => false,
+        'visible_on_front' => false,
+        'user_defined'  =>  true,
+        'global'        => Mage_Catalog_Model_Resource_Eav_Attribute::SCOPE_GLOBAL,
     )
 );
 
 $attributeId = $installer->getAttributeId($entityTypeId, 'integracommerce_active');
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'catalog_category_entity_int';
+} else {
+    $tableName = 'catalog_category_entity_int';
+}
+
 $installer->run(
-    "INSERT IGNORE INTO `{$installer->getTable('catalog_category_entity_int')}`
+    "INSERT IGNORE INTO `{$tableName}`
 (`entity_type_id`, `attribute_id`, `entity_id`, `value`)
     SELECT '{$entityTypeId}', '{$attributeId}', `entity_id`, '0'
-        FROM `{$installer->getTable('catalog_category_entity')}`;"
+        FROM `{$tableName}`;"
 );
 
 $installer->endSetup();

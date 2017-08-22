@@ -12,11 +12,18 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-$installer = $this; 
+$installer = $this;
 $installer->startSetup();
 
+$tablePrefix = Mage::getConfig()->getTablePrefix();
+if (!empty($tablePrefix)) {
+    $tableName = $tablePrefix . 'npcintegra_sku_attributes';
+} else {
+    $tableName = 'npcintegra_sku_attributes';
+}
+
 $installer->run(
-    "CREATE TABLE IF NOT EXISTS `npcintegra_sku_attributes` (
+    "CREATE TABLE IF NOT EXISTS `" . $tableName . "` (
       `entity_id` int(11) AUTO_INCREMENT PRIMARY KEY,
       `category` varchar(245) NULL DEFAULT NULL,
       `attribute` varchar(245) NULL DEFAULT NULL
