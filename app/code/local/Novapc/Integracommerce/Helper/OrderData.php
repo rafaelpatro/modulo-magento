@@ -270,8 +270,10 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $orderPayment = Mage::getModel('sales/order_payment')
             ->setStoreId($storeId)
             ->setCustomerPaymentId(0)
-            ->setMethod('cashondelivery')
-            ->setPo_number(' – ');
+            ->setMethod('integracommerce_payment')
+            ->setPo_number(' – ')
+            ->setIntegracommerceName($order['Payments'][0]['Name'])
+            ->setIntegracommerceInstallments($order['Payments'][0]['Installments']);
         $mageOrder->setPayment($orderPayment);
 
         $weightAttribute = Mage::getStoreConfig('integracommerce/attributes/weight', Mage::app()->getStore());
