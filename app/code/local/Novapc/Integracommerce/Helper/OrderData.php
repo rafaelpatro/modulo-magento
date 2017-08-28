@@ -258,7 +258,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         if (empty($order['TotalFreight'])) {
             $shippingprice = 0;
         } else {
-            $shippingprice = $order['TotalFreight'];
+            $shippingprice = str_replace(',', '.', $order['TotalFreight']);
         }
 
         $mageOrder->setShippingAddress($shippingAddress)
@@ -292,7 +292,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 continue;
             }
 
-            $newPrice = $product['Price'];
+            $newPrice = str_replace(',', '.', $product['Price']);
             $rowTotal = $newPrice * $product['Quantity'];
             $orderItem = Mage::getModel('sales/order_item')
                 ->setStoreId($storeId)
