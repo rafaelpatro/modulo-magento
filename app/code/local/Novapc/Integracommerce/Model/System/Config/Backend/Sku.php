@@ -25,25 +25,21 @@ class Novapc_Integracommerce_Model_System_Config_Backend_Sku extends Mage_Core_M
     public function _beforeSave()
     {   
         $value = $this->getValue();
-        
-        $clearCollection = Mage::getModel('integracommerce/sku')->getCollection();
-        
-        if (!empty($clearCollection) && $clearCollection) {
-            foreach ($clearCollection as $item) {
-                $item->delete();
-            }
-        }
 
+        $categoryData = array();
+        $attributeData = array();
         foreach ($value as $key => $newValue) {
             if (empty($newValue)) {
                 continue;
             }
 
-            $integraAttrs = Mage::getModel('integracommerce/sku');
-            $integraAttrs->setData('category', $newValue['category']);
-            $integraAttrs->setData('attribute', $newValue['attribute']);
-            $integraAttrs->save();                    
+            $categoryId = $newValue['category'];
+            $attributeCode = $newValue['attribute'];
+            $categoryData[$categoryId] = $categoryId;
+            $attributeData[$categoryId] = $attributeCode;
         }
+
+        Mage::getModel('integracommerce/sku')->getCollection()->bulkInsert($categoryData, $attributeData);
         
         if (empty($value['__empty']) && count($value) <= 1) {
             $this->setValue(null);

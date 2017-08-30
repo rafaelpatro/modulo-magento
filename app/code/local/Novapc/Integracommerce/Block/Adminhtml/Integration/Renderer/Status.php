@@ -12,7 +12,8 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
+class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status
+    extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
 {
     
     public function render(Varien_Object $row)
@@ -21,8 +22,8 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status extends
         if (!$value || empty($value)) {
             return '<span style="color:red;">'. Mage::helper('integracommerce')->__('A Sincronizar') .'</span>';
         } else {
-            $date = strtotime($value);
-            $newformat = date('d/m/Y H:i:s', $date);
+            $date = new DateTime($value);
+            $newformat = $date->format('d/m/Y H:i:s');
             return '<span>'. $newformat .'</span>';
         }
     }

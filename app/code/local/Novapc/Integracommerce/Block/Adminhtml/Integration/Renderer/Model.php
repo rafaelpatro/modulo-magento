@@ -12,7 +12,8 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Model extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
+class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Model
+    extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
 {
     
     public function render(Varien_Object $row)

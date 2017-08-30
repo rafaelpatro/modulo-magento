@@ -57,7 +57,8 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
         if ($this->getRequest()->getParam('id') > 0) {
             try
             {
-                $errorQueue = Mage::getModel('integracommerce/update')->load($this->getRequest()->getParam('id'), 'product_id');
+                $errorQueue = Mage::getModel('integracommerce/update')
+                    ->load($this->getRequest()->getParam('id'), 'product_id');
                 $errorQueue->delete();
                 Mage::getSingleton('adminhtml/session')->addSuccess('Item excluido com sucesso.');
                 $this->_redirect('*/*/');
@@ -76,12 +77,9 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
     {
         $itensIds = (array) $this->getRequest()->getParam('integracommerce_report');
 
-        $collection = Mage::getModel('integracommerce/update')->getCollection()
-            ->addFieldToFilter('entity_id', array('in' => $itensIds));
-
-        foreach ($collection as $item) {
-            $item->delete();
-        }
+        $collection = Mage::getModel('integracommerce/update')
+            ->getCollection()
+            ->deleteItens($itensIds);
 
         $this->_redirect('*/*/');
     }

@@ -14,6 +14,9 @@
 
 class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_Controller_Action
 {
+    const SUCCESS_MESSAGE = 'Sincronização Completa';
+    const NO_ORDERS       = 'Não existe nenhum pedido em Aprovado no momento.';
+
     public function indexAction() 
     {
         $this->loadLayout();
@@ -41,14 +44,14 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
             if (empty($requested['Orders'])) {
                 /*SE NAO FOR RETORNADO PEDIDOS RETORNA A MENSAGEM AO USUARIO*/
-                Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__('Não existe nenhum pedido em Aprovado no momento.'));
+                Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__(self::NO_ORDERS));
                 $this->_redirect('*/*/');
             }
 
             /*INCIA PROCESSO DE CRIACAO DE PEDIDOS*/
             Novapc_Integracommerce_Helper_OrderData::startOrders($requested, $orderModel);
 
-            Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__('Sincronização Completa.'));
+            Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__(self::SUCCESS_MESSAGE));
             $this->_redirect('*/*/');
         }
     }   
@@ -57,12 +60,9 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
     {
         $ordersIds = (array) $this->getRequest()->getParam('integracommerce_order');
 
-        $collection = Mage::getModel('integracommerce/order')->getCollection()
-            ->addFieldToFilter('entity_id', array('in' => $ordersIds));
-
-        foreach ($collection as $order) {
-            $order->delete();
-        }
+        $collection = Mage::getModel('integracommerce/order')
+            ->getCollection()
+            ->deleteOrders($ordersIds);
 
         $this->_redirect('*/*/');
     }
@@ -86,21 +86,29 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
             $ordersIds = (array) $this->getRequest()->getParam('integracommerce_order');
 
+            $mageOrdersIds = Mage::getModel('integracommerce/order')
+                ->getCollection()
+                ->addIdsToFilter($ordersIds, null, null);
+
+            $ordersCollection = Mage::getModel('sales/order')
+                ->getCollection()
+                ->addFieldToFilter('entity_id', array('in' => $mageOrdersIds))
+                ->addFieldToSelect('*');
+
+            $mageOrdersIds = array();
+            foreach ($ordersCollection as $order) {
+                $mageOrdersIds[] = $order->getId();
+            }
+
+            $nonexistentOrders = array_diff($ordersIds, $mageOrdersIds);
+            $integraCollection = Mage::getModel('integracommerce/order')
+                ->getCollection()
+                ->addFieldToFilter('entity_id', array('in' => $nonexistentOrders))
+                ->addFieldToSelect('*');
+
             $requested = 0;
-            foreach ($ordersIds as $id) {
-                $checkOrder = Mage::getModel('integracommerce/order')->load($id, 'entity_id');
-                $magentoId = $checkOrder->getData('magento_order_id');
-
-                if (!empty($magentoId)) {
-                    $tryOrder = Mage::getModel('sales/order')->load($magentoId);
-                    $checkIncrementId = $tryOrder->getIncrementId();
-
-                    if ($checkIncrementId || !empty($checkIncrementId)) {
-                        continue;
-                    }
-                }
-
-                $integraId = $checkOrder->getIntegraId();
+            foreach ($integraCollection as $integraOrder) {
+                $integraId = $integraOrder->getIntegraId();
 
                 $url = "https://" . $environment . ".integracommerce.com.br/api/Order/" . $integraId;
 
@@ -119,7 +127,7 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
             $requestedHour = $requestedHour + $requested;
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
-            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $orderModel->setStatus($requestTime);
             $orderModel->setRequestedHour($requestedHour);
@@ -132,7 +140,7 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
             $orderModel->save();
 
-            Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__('Sincronização Completa!'));
+            Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__(self::SUCCESS_MESSAGE));
             $this->_redirect('*/*/');
         }
     }
@@ -144,10 +152,6 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
         $this->renderLayout();
     }
 
-
-    /**
-     * Product grid for AJAX request
-     */
     public function gridAction()
     {
         $this->loadLayout();

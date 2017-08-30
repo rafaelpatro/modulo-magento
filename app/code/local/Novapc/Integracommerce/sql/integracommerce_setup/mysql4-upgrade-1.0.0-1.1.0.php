@@ -31,7 +31,7 @@ $installer->run(
       `marketplace_name` VARCHAR(145) NOT NULL,
       `store_name` VARCHAR(145) NOT NULL,
       `updated_marketplace_status` TINYINT(1) NOT NULL,
-      `estimated_delivery_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+      `estimated_delivery_date` timestamp NULL DEFAULT NULL,
       `customer_pf_cpf` VARCHAR(245) NULL DEFAULT NULL,
       `customer_pf_name` VARCHAR(145) NULL DEFAULT NULL,
       `customer_pj_cnpj` VARCHAR(245) NULL DEFAULT NULL,
@@ -58,20 +58,20 @@ $installer->run(
       `invoiced_danfe_xml` VARCHAR(245) NULL DEFAULT NULL,
       `shipping_tracking_url` VARCHAR(245) NULL DEFAULT NULL,
       `shipping_tracking_protocol` VARCHAR(245) NULL DEFAULT NULL,
-      `shipped_estimated_delivery` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-      `shipped_carrier_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+      `shipped_estimated_delivery` timestamp NULL DEFAULT NULL,
+      `shipped_carrier_at` timestamp NULL DEFAULT NULL,
       `shipped_carrier_name` VARCHAR(145) NOT NULL,
       `shipment_exception_observation` VARCHAR(245) NULL DEFAULT NULL,
-      `shipment_exception_occurrence_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-      `delivered_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+      `shipment_exception_occurrence_at` timestamp NULL DEFAULT NULL,
+      `delivered_at` timestamp NULL DEFAULT NULL,
       `products_skus` VARCHAR(245) NOT NULL,  
       `magento_order_id` bigint(45) UNIQUE NULL DEFAULT NULL,
       `magento_customer_id` bigint(11) NULL DEFAULT NULL,
       `customer_email` VARCHAR(245) NULL DEFAULT NULL,
-      `inserted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-      `purchased_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-      `approved_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-      `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP  
+      `inserted_at` timestamp NULL DEFAULT NULL,
+      `purchased_at` timestamp NULL DEFAULT NULL,
+      `approved_at` timestamp NULL DEFAULT NULL,
+      `updated_at` timestamp NULL DEFAULT NULL  
       ) "
 );
  

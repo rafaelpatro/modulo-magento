@@ -116,11 +116,6 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration_Grid extends Mage_Admin
         return $this;
     }
 
-    protected function _addColumnFilterToCollection($column)
-    {
-        return parent::_addColumnFilterToCollection($column);
-    }
-    
     public function getGridUrl() 
     {
         return $this->getUrl('*/*/grid', array('_current'=>true));

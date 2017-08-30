@@ -38,7 +38,7 @@ class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_
         return $select;
     }
 
-    public function getAllIds($limit = null, $offset = null)
+    public function getProductIds($limit = null, $offset = null)
     {
         $idsSelect = $this->_getClearSelect();
         $idsSelect->columns('product_id');
@@ -46,5 +46,41 @@ class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_
         $idsSelect->resetJoinLeft();
 
         return $this->getConnection()->fetchCol($idsSelect, $this->_bindParams);
+    }
+
+    public function bulkInsert($productsIds)
+    {
+        $rows = array();
+        foreach ($productsIds as $productId) {
+            $rows[] = array(
+                'product_id' => $productId,
+                'product_body' => null,
+                'product_error' => null,
+                'sku_body' => null,
+                'sku_error' => null,
+                'price_body' => null,
+                'price_error' => null,
+                'stock_body' => null,
+                'stock_error' => null
+            );
+        }
+
+        $write = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+        $write->insertOnDuplicate(
+            $this->getMainTable(),
+            $rows,
+            array('product_id')
+        );
+    }
+
+    public function deleteItens($productsIds)
+    {
+        $write = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+        $write->delete(
+            $this->getMainTable(),
+            array('entity_id IN (?)' => $productsIds)
+        );
     }
 }

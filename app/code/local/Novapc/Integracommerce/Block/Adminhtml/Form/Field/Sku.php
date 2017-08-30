@@ -12,7 +12,8 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Block_Adminhtml_Form_Field_Sku extends Mage_Adminhtml_Block_System_Config_Form_Field_Array_Abstract
+class Novapc_Integracommerce_Block_Adminhtml_Form_Field_Sku
+    extends Mage_Adminhtml_Block_System_Config_Form_Field_Array_Abstract
 {
     public function __construct()
     {

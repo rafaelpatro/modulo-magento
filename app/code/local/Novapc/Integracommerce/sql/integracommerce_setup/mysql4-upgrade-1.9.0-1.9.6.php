@@ -25,7 +25,7 @@ if (!empty($tablePrefix)) {
 $installer->run(
     "TRUNCATE TABLE `". $tableName . "`;
 
-    ALTER TABLE `" . $tableName . "` MODIFY `status` timestamp NULL DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE `" . $tableName . "` MODIFY `status` timestamp NULL DEFAULT NULL;
     
     INSERT INTO `" . $tableName . "` (`integra_model`, `status`) VALUES ('Category', NULL);
     INSERT INTO `" . $tableName . "` (`integra_model`, `status`) VALUES ('Product Insert', NULL);

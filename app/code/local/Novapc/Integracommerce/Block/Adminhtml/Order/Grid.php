@@ -114,7 +114,7 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
                 'header'=> Mage::helper('integracommerce')->__('Total Amount'),
                 'type' => 'currency',   
                 'width' => '1',             
-                'currency_code' => Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE),                
+                'currency_code' => Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE),
                 'index' => 'total_amount',
             )
         );
@@ -125,7 +125,7 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
                 'header'=> Mage::helper('integracommerce')->__('Shipping Cost'),
                 'type' => 'currency',   
                 'width' => '1',             
-                'currency_code' => Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE),                
+                'currency_code' => Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE),
                 'index' => 'total_freight',
             )
         );
@@ -136,7 +136,7 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
                 'header'=> Mage::helper('integracommerce')->__('Discount'),
                 'type' => 'currency',   
                 'width' => '1',             
-                'currency_code' => Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE),                
+                'currency_code' => Mage::getStoreConfig(Mage_Directory_Model_Currency::XML_PATH_CURRENCY_BASE),
                 'index' => 'total_discount',
             )
         );
@@ -165,7 +165,7 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
     protected function _prepareMassaction()
     {
 
-        $this->setMassactionIdField('integra_id');
+        $this->setMassactionIdField('entity_id');
         $this->getMassactionBlock()->setFormFieldName('integracommerce_order');
 
         $this->getMassactionBlock()->addItem(
@@ -188,13 +188,6 @@ class Novapc_Integracommerce_Block_Adminhtml_Order_Grid extends Mage_Adminhtml_B
         return $this;
     }                
 
-    protected function _addColumnFilterToCollection($column)
-    {
-
-       return parent::_addColumnFilterToCollection($column);
-        
-    }
-    
     public function getGridUrl()
     {
         return $this->getUrl('*/*/grid', array('_current'=>true));

@@ -59,76 +59,14 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
     }
 
-    public static function newProduct($product,$_cats,$_attrs,$loadedAttrs, $environment)
+    public static function newProduct($product, $_cats, $_attrs, $loadedAttrs, $environment)
     {
-        if ($loadedAttrs['0'] !== 'not_selected') {
-            $_nbmOrigin = $product->getResource()->getAttribute($loadedAttrs['0']);
+        $productAttributes = self::prepareProduct($product);
 
-            if (strpos($_nbmOrigin->getFrontend()->getValue($product), 'Estrangeira') !== false || strpos($_nbmOrigin->getFrontend()->getValue($product), 'Internacional') !== false) {
-                $nbmOrigin = "1";
-            } elseif (strpos($_nbmOrigin->getFrontend()->getValue($product), 'Nacional') !== false) {
-                $nbmOrigin = "0";
-            } elseif ($_nbmOrigin->getFrontend()->getValue($product)) {
-                $nbmOrigin = "0";
-            }
-        }
-
-        if (empty($nbmOrigin) || !$nbmOrigin || $nbmOrigin == null) {
-            $nbmOrigin = $product->getData($loadedAttrs['0']);
-
-            if (strpos($nbmOrigin, 'Estrangeira') !== false || strpos($nbmOrigin, 'Internacional') !== false) {
-                $nbmOrigin = "1";
-            } elseif (strpos($nbmOrigin, 'Nacional') !== false) {
-                $nbmOrigin = "0";
-            } else {
-                $nbmOrigin = "0";
-            }
-        }       
-
-        if (empty($loadedAttrs['3']) || !$loadedAttrs['3'] || $loadedAttrs['3'] == null || $loadedAttrs['3'] == 'not_selected') {
-            $checkBrand = "";
+        if ($loadedAttrs['2'] !== 'not_selected') {
+            $warranty = $product->getData($loadedAttrs['2']);
         } else {
-            $checkBrand = $product->getAttributeText($loadedAttrs['3']);
-
-            if (empty($checkBrand) || !$checkBrand) {
-                $checkBrand = $product->getData($loadedAttrs['3']);
-            }
-
-            if (empty($checkBrand) || $checkBrand == null) {
-                $checkBrand = "";
-            }
-        }
-
-        if (empty($loadedAttrs['1']) || !$loadedAttrs['1'] || $loadedAttrs['1'] == null || $loadedAttrs['1'] == 'not_selected') {
-            $checkNbmNumber = "";
-        } else {
-            $checkNbmNumber = $product->getAttributeText($loadedAttrs['1']);
-
-            if (empty($checkNbmNumber) || !$checkNbmNumber) {
-                $checkNbmNumber = $product->getData($loadedAttrs['1']);
-            }   
-
-            if (empty($checkNbmNumber) || $checkNbmNumber == null) {
-                $checkNbmNumber = "";
-            }                     
-        }    
-
-        if (empty($loadedAttrs['2']) || !$loadedAttrs['2'] || $loadedAttrs['2'] == null || $loadedAttrs['2'] == 'not_selected') {
-            $checkWarrantyTime = "0";
-        } else {
-            $checkWarrantyTime = $product->getAttributeText($loadedAttrs['2']);
-
-            if (empty($checkWarrantyTime) || !$checkWarrantyTime) {
-                $checkWarrantyTime = $product->getData($loadedAttrs['2']);
-            }  
-
-            if (empty($checkWarrantyTime) || $checkWarrantyTime == null) {
-                $checkWarrantyTime = "0";
-            }                       
-        }  
-
-        if ($nbmOrigin !== "0" || $nbmOrigin !== "1") {
-            $nbmOrigin = "0";
+            $warranty = "0";
         }
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
@@ -143,10 +81,10 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "idProduct" => $idProduct,
             "Name" => $product->getName(),
             "Code" => $product->getId(),
-            "Brand" => $checkBrand,
-            "NbmOrigin" => $nbmOrigin,
-            "NbmNumber" => $checkNbmNumber,
-            "WarrantyTime" => $checkWarrantyTime,
+            "Brand" => $productAttributes['brand'],
+            "NbmOrigin" => $productAttributes['nbmOrigin'],
+            "NbmNumber" => $productAttributes['nbmNumber'],
+            "WarrantyTime" => $warranty,
             "Active" => true,
             "Categories" => $_cats,
             "Attributes" => $_attrs
@@ -176,76 +114,133 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
     }
 
-    public static function newSku($product, $pictures, $_attrs, $loadedAttrs, $productId, $environment, $configurableProduct = null)
+    public static function prepareProduct($product)
     {
-        $measure = Mage::getStoreConfig('integracommerce/general/measure', Mage::app()->getStore());
+        $nbmOrigin = Mage::getStoreConfig('integracommerce/attributes/nbm_origin', Mage::app()->getStore());
+        $nbmNumber = Mage::getStoreConfig('integracommerce/attributes/nbm_number', Mage::app()->getStore());
+        $brand = Mage::getStoreConfig('integracommerce/attributes/brand', Mage::app()->getStore());
+        $returnData = array();
 
-        $url = 'https://' . $environment . '.integracommerce.com.br/api/Sku';
+        if ($nbmOrigin !== 'not_selected') {
+            $nbmOrigin = self::checkNbmOrigin($product, $nbmOrigin);
+        } else {
+            $nbmOrigin = "0";
+        }
 
-        $heightValue = $product->getData($loadedAttrs['4']);
-        $widthValue = $product->getData($loadedAttrs['5']);
-        $lengthValue = $product->getData($loadedAttrs['6']);
+        if ($nbmNumber !== 'not_selected') {
+            $nbmNumber = self::checkNbmNumber($product, $nbmNumber);
+        } else {
+            $nbmNumber = "";
+        }
 
-        if (!empty($heightValue) && !empty($widthValue) && !empty($lengthValue)) {
-            if ($measure && !empty($measure) && $measure == 1) {
-                $heightValue = $heightValue / 100;
-                $widthValue = $widthValue / 100;
-                $lengthValue = $lengthValue / 100;
-            } elseif ($measure && !empty($measure) && $measure == 3) {
-                $heightValue = $heightValue / 1000;
-                $widthValue = $widthValue / 1000;
-                $lengthValue = $lengthValue / 1000;
+        if ($brand !== 'not_selected') {
+            $brand = self::checkNbmNumber($product, $brand);
+        } else {
+            $brand = "";
+        }
+
+        $returnData['nbmOrigin'] = $nbmOrigin;
+        $returnData['nbmNumber'] = $nbmNumber;
+        $returnData['brand'] = $brand;
+
+        return $returnData;
+    }
+
+    public static function checkNbmOrigin($product, $attrCode)
+    {
+        $attribute = $product->getResource()->getAttribute($attrCode);
+        $frontendInput = $attribute->getFrontendInput();
+
+        if ($frontendInput == "select" || $frontendInput == "multiselect") {
+            $attrValue = $product->getAttributeText($attrCode);
+            if (is_array($attrValue)) {
+                $attrValue = implode(",", $attrValue);
+            }
+        } else {
+            $attrValue = $product->getData($attrCode);
+        }
+
+        if (empty($attrValue)) {
+            return "0";
+        }
+
+        $estrangeiro = strpos($attrValue, 'Estrangeira');
+        $internacional = strpos($attrValue, 'Internacional');
+        $nacional = strpos($attrValue, 'Nacional');
+
+        if ($strposEstrangeira !== false || $strposInternacional !== false) {
+            $nbmOrigin = "1";
+        } elseif ($nacional !== false) {
+            $nbmOrigin = "0";
+        } else {
+            $nbmOrigin = (string) $attrValue;
+            if ($nbmOrigin !== "0" && $nbmOrigin !== "1") {
+                $nbmOrigin = "0";
             }
         }
+
+        return $nbmOrigin;
+    }
+
+    public static function checkNbmNumber($product, $attrCode)
+    {
+        $attribute = $product->getResource()->getAttribute($attrCode);
+        $frontendInput = $attribute->getFrontendInput();
+
+        if ($frontendInput == "select" || $frontendInput == "multiselect") {
+            $nbmNumber = $product->getAttributeText($attrCode);
+            if (is_array($nbmNumber)) {
+                $nbmNumber = implode(",", $nbmNumber);
+            }
+        } else {
+            $nbmNumber = $product->getData($attrCode);
+        }
+
+        if (empty($nbmNumber)) {
+            return "";
+        }
+
+        if (strpos($nbmNumber, ".") !== false) {
+            $nbmNumber = str_replace(".", "", $nbmNumber);
+        }
+
+        return $nbmNumber;
+    }
+
+    public static function checkBrand($product, $attrCode)
+    {
+        $attribute = $product->getResource()->getAttribute($attrCode);
+        $frontendInput = $attribute->getFrontendInput();
+
+        if ($frontendInput == "select" || $frontendInput == "multiselect") {
+            $brand = $product->getAttributeText($attrCode);
+            if (is_array($brand)) {
+                $brand = implode(",", $brand);
+            }
+        } else {
+            $brand = $product->getData($attrCode);
+        }
+
+        if (empty($brand)) {
+            return "";
+        } else {
+            return $brand;
+        }
+    }
+
+    public static function newSku($product, $pictures, $_attrs, $loadedAttrs, $productId, $environment, $cfgProd = null)
+    {
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/Sku';
+        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
+        list($heightValue, $widthValue, $lengthValue) = self::checkMeasure($product, $loadedAttrs);
+        list($normalPrice, $specialPrice) = self::checkPrice($product, $cfgProd);
+        $weight = self::checkWeight($product, $loadedAttrs);
 
         $stockItem = Mage::getModel('cataloginventory/stock_item')
-               ->loadByProduct($product->getId());                          
-
-        $normalPrice = $product->getPrice();
-        $specialPrice = $product->getSpecialPrice();
-        if (!$specialPrice || empty($specialPrice)) {
-            $specialPrice = $normalPrice;
-        }
-
-        if (!$normalPrice || empty($normalPrice) || $normalPrice < 1) {
-            if ($configurableProduct && !empty($configurableProduct)) {
-                if ($configurableProduct->getId()) {
-                    $normalPrice = $configurableProduct->getPrice();
-                    $specialPrice = $configurableProduct->getSpecialPrice();
-                    if (!$specialPrice || empty($specialPrice)) {
-                        $specialPrice = $normalPrice;
-                    }
-                }
-            }
-        }
-
+               ->loadByProduct($product->getId());
         $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
 
-        $weight = $product->getData($loadedAttrs['7']);
-        $weightUnit = Mage::getStoreConfig('integracommerce/general/weight_unit', Mage::app()->getStore());
-
-        if (strstr($weight, ".") !== false) {
-            if ($weightUnit == 'grama') {
-                $weight = strstr($weight, '.', true);
-                $weight = $weight / 1000;
-            } else {
-                $weight = (float) $product->getData($loadedAttrs['7']);
-            }
-        } else {
-            if ($weightUnit == 'grama') {
-                $weight = $weight / 1000;
-            } else {
-                $weight = (int) $product->getData($loadedAttrs['7']);
-            }
-        }
-
-        $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
-
-        if ($productControl == 'sku') {
-            $idSku = $product->getData('sku');
-        } else {
-            $idSku = $product->getId();
-        }
+        $idSku = $product->getData($productControl);
 
         $productStatus = $product->getStatus();
         if ($productStatus == 2) {
@@ -265,7 +260,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "Length" => $lengthValue,
             "Weight" => $weight,
             "CodeEan" => ($loadedAttrs['8'] == 'not_selected' ? "" : $product->getData($loadedAttrs['8'])),
-            "CodeNcm" => ($loadedAttrs['9'] == 'not_selected' ? "" : $product->getData($loadedAttrs['9'])),
+            "CodeNcm" => ($loadedAttrs['1'] == 'not_selected' ? "" : $product->getData($loadedAttrs['1'])),
             "CodeIsbn" => ($loadedAttrs['10'] == 'not_selected' ? "" : $product->getData($loadedAttrs['10'])),
             "CodeNbm" => ($loadedAttrs['1'] == 'not_selected' ? "" : $product->getData($loadedAttrs['1'])),
             "Variation" => "",
@@ -300,7 +295,74 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
                 0
             );
         }
-    } 
+    }
+
+    public static function checkWeight($product, $loadedAttrs)
+    {
+        $weightUnit = Mage::getStoreConfig('integracommerce/general/weight_unit', Mage::app()->getStore());
+        $weight = $product->getData($loadedAttrs['7']);
+
+        if (strstr($weight, ".") !== false) {
+            if ($weightUnit == 'grama') {
+                $weight = strstr($weight, '.', true);
+                $weight = $weight / 1000;
+            } else {
+                $weight = (float) $product->getData($loadedAttrs['7']);
+            }
+        } else {
+            if ($weightUnit == 'grama') {
+                $weight = $weight / 1000;
+            } else {
+                $weight = (int) $product->getData($loadedAttrs['7']);
+            }
+        }
+
+        return $weight;
+    }
+
+    public static function checkPrice($product, $configProduct = null)
+    {
+        $normalPrice = $product->getPrice();
+        $specialPrice = $product->getSpecialPrice();
+        if (empty($specialPrice)) {
+            $specialPrice = $normalPrice;
+        }
+
+        if (!$normalPrice || empty($normalPrice) || $normalPrice < 1) {
+            if (!empty($configProduct)) {
+                if ($configProduct->getId()) {
+                    $normalPrice = $configProduct->getPrice();
+                    $specialPrice = $configProduct->getSpecialPrice();
+                    if (!$specialPrice || empty($specialPrice)) {
+                        $specialPrice = $normalPrice;
+                    }
+                }
+            }
+        }
+
+        return array($normalPrice, $specialPrice);
+    }
+
+    public static function checkMeasure($product, $loadedAttrs)
+    {
+        $measure = Mage::getStoreConfig('integracommerce/general/measure', Mage::app()->getStore());
+
+        $heightValue = $product->getData($loadedAttrs['4']);
+        $widthValue = $product->getData($loadedAttrs['5']);
+        $lengthValue = $product->getData($loadedAttrs['6']);
+
+        if ($measure && !empty($measure) && $measure == 1) {
+            $heightValue = $heightValue / 100;
+            $widthValue = $widthValue / 100;
+            $lengthValue = $lengthValue / 100;
+        } elseif ($measure && !empty($measure) && $measure == 3) {
+            $heightValue = $heightValue / 1000;
+            $widthValue = $widthValue / 1000;
+            $lengthValue = $lengthValue / 1000;
+        }
+
+        return array($heightValue, $widthValue, $lengthValue);
+    }
 
     public static function getOrders()
     {
@@ -321,7 +383,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         if ($product->getTypeId() == 'simple') {
-            $configurableIds = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product->getId());
+            $configurableIds = Mage::getModel('catalog/product_type_configurable')
+                ->getParentIdsByChild($product->getId());
         }
 
         $configProd = Mage::getStoreConfig('integracommerce/general/configprod', Mage::app()->getStore());
@@ -332,15 +395,17 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $specialPrice = $normalPrice;
         }
 
-        if (!$normalPrice || empty($normalPrice) || $normalPrice < 1) {
-            if (!empty($configurableIds) && $configProd == 1) {
-                foreach ($configurableIds as $configurableId) {
-                    $configurableProduct = Mage::getModel('catalog/product')->load($configurableId);
-                    $normalPrice = $configurableProduct->getPrice();
-                    $specialPrice = $configurableProduct->getSpecialPrice();
-                    if (!$specialPrice || empty($specialPrice)) {
-                        $specialPrice = $normalPrice;
-                    }
+        if ((empty($normalPrice) || $normalPrice < 1) && !empty($configurableIds) && $configProd == 1) {
+            $configCollection = Mage::getModel('catalog/product')
+                ->getCollection()
+                ->addFieldToFilter('entity_id', array('in' => $configurableIds))
+                ->addAttributeToSelect('*');
+
+            foreach ($configCollection as $configurableProduct) {
+                $normalPrice = $configurableProduct->getPrice();
+                $specialPrice = $configurableProduct->getSpecialPrice();
+                if (empty($specialPrice)) {
+                    $specialPrice = $normalPrice;
                 }
             }
         }
@@ -372,7 +437,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
     }
 
-    public static function checkError($jsonBody = null, $response = null, $productId = null, $delete = null, $type = null)
+    public static function checkError($body = null, $response = null, $productId = null, $delete = null, $type = null)
     {
         $errorQueue = Mage::getModel('integracommerce/update')->load($productId, 'product_id');
 
@@ -383,39 +448,24 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             return;
         }
 
-        if (empty($errorProductId) && $delete !== 1) {
-            $errorQueue = Mage::getModel('integracommerce/update');
-            $errorQueue->setProductId($productId);
-        }
-
-        if (empty($response) && empty($jsonBody)) {
+        if (empty($response) && empty($body)) {
             return;
         }
 
-        if (is_array($response)) {
-            if (!empty($response['Errors'])) {
-                foreach ($response['Errors'] as $error) {
-                    $response = $error['Message'] . '. ';
-                };
-            } else {
-                $response = json_encode($response);
-            }
+        if (is_array($response) && !empty($response['Errors'])) {
+            foreach ($response['Errors'] as $error) {
+                $response = $error['Message'] . '. ';
+            };
+        } elseif (is_array($response) && empty($response['Errors'])) {
+            $response = json_encode($response);
         }
 
-        if ($type == 'product') {
-            $errorQueue->setProductBody($jsonBody);
-            $errorQueue->setProductError($response);
-        } elseif ($type == 'sku') {
-            $errorQueue->setSkuBody($jsonBody);
-            $errorQueue->setSkuError($response);            
-        } elseif ($type == 'price') {
-            $errorQueue->setPriceBody($jsonBody);
-            $errorQueue->setPriceError($response);
-        } elseif ($type == 'stock') {
-            $errorQueue->setStockBody($jsonBody);
-            $errorQueue->setStockError($response);
+        if (empty($errorProductId)) {
+            $errorQueue->setProductId($productId);
         }
 
+        $errorQueue->setData($type . '_body', $body);
+        $errorQueue->setData($type . '_error', $response);
         $errorQueue->save();
     }
 
@@ -446,9 +496,11 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $connection->addOption(CURLOPT_POSTFIELDS, $body);
         }
 
-        $connection->setConfig(array(
+        $connection->setConfig(
+            array(
             'timeout'   => 30
-        ));
+            )
+        );
 
         $connection->write($zendMethod, $url, '1.0', $headers, $body);
         $response = $connection->read();
@@ -462,6 +514,23 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $response['httpCode'] = $httpCode;
 
         return $response;
+    }
+
+    public static function currentDate($format = null, $return = null)
+    {
+        if (empty($format)) {
+            $format = 'Y-m-d H:i:s';
+        }
+
+        $timeZone = Mage::getStoreConfig('general/locale/timezone');
+        $dateObj = new DateTime(null, new DateTimeZone($timeZone));
+
+        if ($return == 'string') {
+            $newFormat = $dateObj->format($format);
+            return $newFormat;
+        } else {
+            return $dateObj;
+        }
     }
 
 }

@@ -17,16 +17,19 @@ $installer->startSetup();
 
 $tablePrefix = Mage::getConfig()->getTablePrefix();
 if (!empty($tablePrefix)) {
-    $integrationTable = $tablePrefix . 'npcintegra_integration';
-    $queueTable = $tablePrefix . 'npcintegra_order_queue';
+    $queueTable = $tablePrefix . 'npcintegra_product_queue';
+    $attrTable = $tablePrefix . 'npcintegra_sku_attributes';
 } else {
-    $integrationTable = 'npcintegra_integration';
     $queueTable = 'npcintegra_order_queue';
+    $attrTable = 'npcintegra_sku_attributes';
 }
 
-$installer->run(
-    "ALTER TABLE  `" . $integrationTable . "` ADD `initial_hour` timestamp NULL DEFAULT NULL;
-    ALTER TABLE  `" . $queueTable . "` ADD `initial_hour` timestamp NULL DEFAULT NULL;"
-);
+if (!$installer->getConnection()->tableColumnExists($queueTable, 'product_id')) {
+    $installer->run("ALTER TABLE `" . $queueTable . "` ADD UNIQUE INDEX `product_id_UNIQUE` (`product_id` ASC);");
+}
+
+if (!$installer->getConnection()->tableColumnExists($attrTable, 'category')) {
+    $installer->run("ALTER TABLE `" . $attrTable . "` ADD UNIQUE INDEX `category_UNIQUE` (`category` ASC);");
+}
 
 $installer->endSetup();

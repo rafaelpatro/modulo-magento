@@ -14,6 +14,9 @@
 
 class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminhtml_Controller_Action
 {
+    const SUCCESS_MESSAGE = 'Sincronização Completa';
+    const FALSE_FAIL_MSG  = 'Sincronização Completa. Existem itens no Relatório.';
+
     public function indexAction() 
     {
         $this->loadLayout();
@@ -49,7 +52,7 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
-            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $categoryModel->setStatus($requestTime);
             $categoryModel->setRequestedHour($requestedHour);
@@ -62,7 +65,9 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
             $categoryModel->save();
 
-            Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__("Synchronization completed."));
+            Mage::getSingleton('core/session')->addSuccess(
+                Mage::helper('integracommerce')->__(self::SUCCESS_MESSAGE)
+            );
 
             $this->_redirect('*/*/');
         }
@@ -95,7 +100,7 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
-            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
             $productModel->setRequestedHour($requestedHour);
@@ -112,9 +117,13 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $queueCount = $queueCollection->getSize();
 
             if ($queueCount >= 1) {
-                Mage::getSingleton('core/session')->addWarning(Mage::helper('integracommerce')->__("Existem itens no Relatório, por favor, verifique para mais informações."));
+                Mage::getSingleton('core/session')->addWarning(
+                    Mage::helper('integracommerce')->__(self::FALSE_FAIL_MSG)
+                );
             } else {
-                Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__("Synchronization completed."));
+                Mage::getSingleton('core/session')->addSuccess(
+                    Mage::helper('integracommerce')->__(self::SUCCESS_MESSAGE)
+                );
             }
 
             $this->_redirect('*/*/');
@@ -137,6 +146,7 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $requestedDay = $productModel->getRequestedDay();
             $requestedWeek = $productModel->getRequestedWeek();
             $requestedInitial = $productModel->getInitialHour();
+            $requestedHour = 100;
             $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested);
 
             if ($alreadyRequested == $requestedHour) {
@@ -148,7 +158,7 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
-            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
             $productModel->setRequestedHour($requestedHour);
@@ -165,18 +175,19 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $queueCount = $queueCollection->getSize();
 
             if ($queueCount >= 1) {
-                Mage::getSingleton('core/session')->addWarning(Mage::helper('integracommerce')->__("Existem itens no Relatório, por favor, verifique para mais informações."));
+                Mage::getSingleton('core/session')->addWarning(
+                    Mage::helper('integracommerce')->__(self::FALSE_FAIL_MSG)
+                );
             } else {
-                Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__("Synchronization completed."));
+                Mage::getSingleton('core/session')->addSuccess(
+                    Mage::helper('integracommerce')->__(self::SUCCESS_MESSAGE)
+                );
             }
 
             $this->_redirect('*/*/');
         }
     }
 
-    /**
-     * Product grid for AJAX request
-     */
     public function gridAction()
     {
         $this->loadLayout();

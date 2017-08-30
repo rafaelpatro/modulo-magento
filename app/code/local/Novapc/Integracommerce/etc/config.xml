@@ -16,7 +16,7 @@
 <config>
 	<modules>
 		<Novapc_Integracommerce>
-			<version>2.0.3</version>
+			<version>2.0.4</version>
 		</Novapc_Integracommerce>
 	</modules>
     <frontend>

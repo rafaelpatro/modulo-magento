@@ -30,7 +30,7 @@ $installer->run(
     "RENAME TABLE `" . $oldQueue . "` TO `" . $newQueue . "`;
 
     ALTER TABLE `" . $newQueue . "` CHANGE `identificator` `integra_model` varchar(50) NULL DEFAULT NULL;
-    ALTER TABLE `" . $newQueue . "` CHANGE `sent_json` `status` timestamp NULL DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE `" . $newQueue . "` CHANGE `sent_json` `status` timestamp NULL DEFAULT NULL;
     ALTER TABLE `" . $newQueue . "` CHANGE `created_at` `requested_hour` int( 11 ) NULL DEFAULT 0;
     ALTER TABLE `" . $newQueue . "` CHANGE `last_update` `requested_day` int( 11 ) NULL DEFAULT 0;
     ALTER TABLE `" . $newQueue . "` CHANGE `type` `requested_week` int( 11 ) NULL DEFAULT 0;

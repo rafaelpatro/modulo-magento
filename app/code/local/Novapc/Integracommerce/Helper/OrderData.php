@@ -26,7 +26,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $requestedHour = $requestedHour + $requested['Total'];
         $requestedDay = $requestedDay + $requested['Total'];
         $requestedWeek = $requestedWeek + $requested['Total'];
-        $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
+        $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
         /*GRAVA O HORARIO DA REQUISICAO E AS QUANTIDADES*/
         $orderModel->setStatus($requestTime);
@@ -55,14 +55,20 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         }
 
         if (!empty($customerDoc)) {
-            $customer = Mage::getModel('customer/customer')
+            $customerCollection = Mage::getModel('customer/customer')
                 ->getCollection()
-                ->addFieldToFilter('taxvat', $customerDoc)->load()->getFirstItem();
-            $customerId = $customer->getId();
+                ->addFieldToFilter('taxvat', $customerDoc)
+                ->addAttributeToSelect('*')
+                ->setPageSize(1)
+                ->setCurPage(1);
+
+            foreach ($customerCollection as $customer) {
+                $customerId = $customer->getId();
+            }
         }
 
         /*SE CLIENTE JA ESXISTE, ATUALIZA, SE NAO, CRIA*/
-        if ($customerId && !empty($customerId)) {
+        if (!empty($customerId)) {
             self::updateCustomer($customer, $order);
         } else {
             $customerId = self::createCustomer($order);
@@ -89,21 +95,29 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $customer->setWebsiteId(Mage::app()->getWebsite()->getId());
         $customer->setStore(Mage::app()->getStore());
      
-        $customer->setFirstname((empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName']));
+        $customer->setFirstname(
+            (empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName'])
+        );
         $customer->setLastname('.');
-        $customer->setData('taxvat', (empty($order['CustomerPfCpf']) ? $order['CustomerPjCnpj'] : $order['CustomerPfCpf']));
+        $customer->setData(
+            'taxvat',
+            (empty($order['CustomerPfCpf']) ? $order['CustomerPjCnpj'] : $order['CustomerPfCpf'])
+        );
 
         if (!empty($order['CustomerPjIe']) && $ieAttribute !== 'not_selected') {
             $customer->setData($ieAttribute, $customer['CustomerPjIe']);
         }
 
-        $newEmail = $order['MarketplaceName'] . '_' . mt_rand() . '@email.com.br';
+        $marketplaceName = strtolower($order['MarketplaceName']);
+        $marketplaceName = preg_replace('/\s+/', '', $marketplaceName);
+        $newEmail = $marketplaceName . '_' . mt_rand() . '@email.com.br';
         $customer->setEmail($newEmail);
 
         try {
             $customer->save();
         } catch (Exception $e) {
-                Mage::log('Erro ao criar o cliente. Mensagem: '.$e->getMessage(), null, 'customer_save_error_integracommerce.log');
+            $message = $e->getMessage();
+            Mage::log('Erro ao criar o cliente. Mensagem: ' . $message, null, 'cust_save_error_integracommerce.log');
         }        
 
         //VERIFICA SE TEM DADOS PARA CADASTRAR ENDEREÇO  
@@ -111,7 +125,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         $address = Mage::getModel("customer/address");
         $address->setCustomerId($customer->getId())
-            ->setFirstname((empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName']))
+            ->setFirstname(
+                (empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName'])
+            )
             ->setLastname('.')           
             ->setCountryId('BR')
             ->setPostcode($order['DeliveryAddressZipcode'])
@@ -120,7 +136,14 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setRegionId($region->getId())
             ->setTelephone($order['TelephoneMainNumber'])
             ->setFax($order['TelephoneSecundaryNumber'])
-            ->setStreet(array($order['DeliveryAddressStreet'], $order['DeliveryAddressNumber'], (empty($order['DeliveryAddressAdditionalInfo']) ? 'Não Informado' : $order['DeliveryAddressAdditionalInfo']) , $order['DeliveryAddressNeighborhood']))
+            ->setStreet(
+                array(
+                    $order['DeliveryAddressStreet'],
+                    $order['DeliveryAddressNumber'],
+                    (empty($order['DeliveryAddressAdditionalInfo']) ? '' : $order['DeliveryAddressAdditionalInfo']) ,
+                    $order['DeliveryAddressNeighborhood']
+                )
+            )
             ->setIsDefaultBilling('1')
             ->setIsDefaultShipping('1')
             ->setSaveInAddressBook('1');
@@ -129,7 +152,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $address->save(); 
         } catch (Exception $e){
             $message = $e->getMessage();
-            Mage::log('Erro ao cadastrar endereço. Mensagem: '. $message, null, 'customer_save_error_integracommerce.log');
+            Mage::log('Erro ao cadastrar endereço. Mensagem: '. $message, null, 'cust_save_error_integracommerce.log');
         }
 
         $customerId = $customer->getId();
@@ -146,7 +169,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $region = Mage::getModel('directory/region')->loadByCode($order['DeliveryAddressState'], 'BR');
 
         $address->setCustomerId($customer->getId())
-            ->setFirstname((empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName']))
+            ->setFirstname(
+                (empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName'])
+            )
             ->setLastname('.')           
             ->setCountryId('BR')
             ->setPostcode($order['DeliveryAddressZipcode'])
@@ -155,15 +180,23 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setRegionId($region->getId())
             ->setTelephone($order['TelephoneMainNumber'])
             ->setFax($order['TelephoneSecundaryNumber'])
-            ->setStreet(array($order['DeliveryAddressStreet'], $order['DeliveryAddressNumber'], (empty($order['DeliveryAddressAdditionalInfo']) ? 'Não Informado' : $order['DeliveryAddressAdditionalInfo']), $order['DeliveryAddressNeighborhood']))
+            ->setStreet(
+                array(
+                    $order['DeliveryAddressStreet'],
+                    $order['DeliveryAddressNumber'],
+                    (empty($order['DeliveryAddressAdditionalInfo']) ? '' : $order['DeliveryAddressAdditionalInfo']),
+                    $order['DeliveryAddressNeighborhood']
+                )
+            )
             ->setIsDefaultBilling('1')
             ->setIsDefaultShipping('1')
             ->setSaveInAddressBook('1');
 
         try {
             $address->save(); 
-        } catch (Exception $e){ 
-            Mage::log('Erro ao cadastrar endereço. Mensagem: '.$e->getMessage(), null, 'customer_save_error_integracommerce.log');
+        } catch (Exception $e){
+            $message = $e->getMessage();
+            Mage::log('Erro ao cadastrar endereço. Mensagem: '.$message, null, 'cust_save_error_integracommerce.log');
         }        
 
         $customerId = $customer->getId();
@@ -176,6 +209,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         //INICIA O MODEL DE PEDIDO DO MAGENTO
         $transaction = Mage::getModel('core/resource_transaction');
         $storeId = $customer->getStoreId();
+
         if ($storeId == 0) {
             $storeId = 1;
         }
@@ -228,6 +262,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 ->setCountry_id($billing->getCountryId())
                 ->setRegion($billing->getRegion())
                 ->setRegion_id($billing->getRegionId())
+                ->setEmail($customer->getEmail())
                 ->setPostcode($billing->getPostcode())
                 ->setTelephone($billing->getTelephone())
                 ->setFax($billing->getFax())
@@ -249,6 +284,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setCountry_id($shipping->getCountryId())
             ->setRegion($shipping->getRegion())
             ->setRegion_id($shipping->getRegionId())
+            ->setEmail($customer->getEmail())
             ->setPostcode($shipping->getPostcode())
             ->setTelephone($shipping->getTelephone())
             ->setFax($shipping->getFax())
@@ -258,12 +294,17 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         if (empty($order['TotalFreight'])) {
             $shippingprice = 0;
         } else {
+            $shippingprice = $order['TotalFreight'];
             $shippingprice = str_replace(',', '.', $order['TotalFreight']);
         }
 
         $mageOrder->setShippingAddress($shippingAddress)
             ->setShipping_method('flatrate_flatrate')
-            ->setShippingDescription('Loja: '. $order['StoreName'] .', Marketplace: '. $order['MarketplaceName'] .', Frete: ' . $order['ShippedCarrierName'])
+            ->setShippingDescription(
+                "Loja: ". $order['StoreName'] .
+                "\n, Marketplace: ". $order['MarketplaceName'] .
+                "\n, Frete: " . $order['ShippedCarrierName']
+            )
             ->setShippingAmount($shippingprice)
             ->setBaseShippingAmount($shippingprice);
 
@@ -279,21 +320,25 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $weightAttribute = Mage::getStoreConfig('integracommerce/attributes/weight', Mage::app()->getStore());
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         $subTotal = 0;
+
+        $productsIds = array();
+        $productsData = array();
         foreach ($order['Products'] as $key => $product) {
-            if ($productControl == 'sku') {
-                $productId = Mage::getModel('catalog/product')->getResource()->getIdBySku($product['IdSku']);
-            } else {
-                $productId = $product['IdSku'];
-            }
+            $skuId = $product['IdSku'];
+            $productsIds[] = $skuId;
+            $productsData[$skuId]['Price'] =  $product['Price'];
+            $productsData[$skuId]['Quantity'] = $product['Quantity'];
+        }
 
-            $mageProduct = Mage::getModel('catalog/product')->load($productId);
+        $productCollection = Mage::getModel('catalog/product')->getCollection()
+            ->addFieldToFilter($productControl, array('in' => $productsIds))
+            ->addAttributeToSelect('*');
 
-            if (!$mageProduct->getId()) {
-                continue;
-            }
+        foreach ($productCollection as $key => $mageProduct) {
+            $skuId = $mageProduct->getData($productControl);
 
-            $newPrice = str_replace(',', '.', $product['Price']);
-            $rowTotal = $newPrice * $product['Quantity'];
+            $newPrice = str_replace(',', '.', $productsData[$skuId]['Price']);
+            $rowTotal = $newPrice * $productsData[$skuId]['Quantity'];
             $orderItem = Mage::getModel('sales/order_item')
                 ->setStoreId($storeId)
                 ->setQuoteItemId(0)
@@ -301,8 +346,8 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 ->setProductId($mageProduct->getId())
                 ->setProductType($mageProduct->getTypeId())
                 ->setQtyBackordered(null)
-                ->setTotalQtyOrdered($product['Quantity'])
-                ->setQtyOrdered($product['Quantity'])
+                ->setTotalQtyOrdered($productsData[$skuId]['Quantity'])
+                ->setQtyOrdered($productsData[$skuId]['Quantity'])
                 ->setName($mageProduct->getName())
                 ->setSku($mageProduct->getSku())
                 ->setPrice($newPrice)
@@ -327,9 +372,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $estimatedDate = DateTime::createFromFormat('Y-m-d', $estimatedDate);
         $estimatedDate = $estimatedDate->format('d/m/Y');
         
-        $comment = $mageOrder->addStatusHistoryComment("Código do Pedido Integracommerce: " .
+        $comment = $mageOrder->addStatusHistoryComment(
+            "Código do Pedido Integracommerce: " .
             $order['IdOrder'] . "<br>" . "Código do Pedido Marketplace: " .
-            $order['IdOrderMarketplace'] . "<br>" . "Data Estimada de Entrega: " . $estimatedDate, false);
+            $order['IdOrderMarketplace'] . "<br>" . "Data Estimada de Entrega: " .
+            $estimatedDate,
+            false
+        );
         $comment->setIsCustomerNotified(false);
 
         try {
@@ -345,13 +394,24 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $entityId = $mageOrder->getEntityId();
         $updateIncrementId = $mageOrder->getIncrementId();
         
+        self::afterCreate($updateIncrementId, $order, $entityId, $mageOrder, $integraModel);
+
+        $integraModel->setMagentoOrderId($entityId);
+        $integraModel->setMagentoCustomerId($customer->getId());
+        $integraModel->setCustomerEmail($customer->getEmail());
+        $integraModel->save();
+
+        return $entityId;
+    }
+
+    public static function afterCreate($updateIncrementId, $order, $entityId, $mageOrder, $integraModel)
+    {
         if (!empty($updateIncrementId)) {
             self::updateIntegraOrder($order['IdOrder'], $entityId);
-
             $status = Mage::getStoreConfig('integracommerce/order_status/approved', Mage::app()->getStore());
             if ($status !== 'keepstatus') {
                 $states = array();
-                $stateCollection = self::orderStatusFilter($status);
+                $stateCollection = Mage::getModel('integracommerce/order')->getCollection()->orderStatusFilter($status);
                 foreach ($stateCollection as $state) {
                     $states[] = $state->getState();
                 }
@@ -374,23 +434,16 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         if ($mageOrder->canInvoice() && $shouldInvoice == 1) {
             self::createInvoice($mageOrder);
         }
-
-        $integraModel->setMagentoOrderId($entityId);
-        $integraModel->setMagentoCustomerId($customer->getId());
-        $integraModel->setCustomerEmail($customer->getEmail());
-        $integraModel->save();
-
-        return $entityId;
     }
 
     public static function createInvoice($mageOrder)
     {
         $invoice = Mage::getModel('sales/service_order', $mageOrder)->prepareInvoice();
-        $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::NOT_CAPTURE);
+        $invoice->setRequestedCaptureCase(Mage_Sales_Model_Order_Invoice::CAPTURE_OFFLINE);
         $invoice->register();
         $invoice->getOrder()->setCustomerNoteNotify(false);
         $invoice->getOrder()->setIsInProcess(true);
-        $invoice->setState(Mage_Sales_Model_Order_Invoice::STATE_OPEN);
+        $invoice->setState(Mage_Sales_Model_Order_Invoice::STATE_PAID);
 
         $transactionSave = Mage::getModel('core/resource_transaction')
             ->addObject($invoice)
@@ -418,7 +471,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                     $errorMessage = $error['Message'] . ', ';
                 }
 
-                Mage::log('Error: ' . $httpcode . 'Erro ao atualizar o pedido ' . $mageOrderId . ', Codigo Integracommerce: ' . $orderId . '. Motivo: ' . $return['Message'] . '. Erros: ' . $errorMessage, null, 'integracommerce_order_update_error.log');
+                Mage::log(
+                    'Error: ' . $httpcode .
+                    'Erro ao atualizar o pedido ' . $mageOrderId .
+                    ', Codigo Integracommerce: ' . $orderId .
+                    '. Motivo: ' . $return['Message'] .
+                    '. Erros: ' . $errorMessage, null, 'integracommerce_order_update_error.log'
+                );
             }
 
             $requestLog = Mage::getStoreConfig('integracommerce/general/request_log', Mage::app()->getStore());
@@ -446,7 +505,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $integraOrder->setCustomerPfCpf((empty($order['CustomerPfCpf']) ? "" : $order['CustomerPfCpf']));
         $integraOrder->setCustomerPfName((empty($order['CustomerPfName']) ? "" : $order['CustomerPfName']));
         $integraOrder->setCustomerPjCnpj((empty($order['CustomerPjCnpj']) ? "" : $order['CustomerPjCnpj']));
-        $integraOrder->setCustomerPjCorporateName((empty($order['CustomerPjCorporatename']) ? "" : $order['CustomerPjCorporatename']));
+        $integraOrder->setCustomerPjCorporateName(
+            (empty($order['CustomerPjCorporatename']) ? "" : $order['CustomerPjCorporatename'])
+        );
 
         $integraOrder->setDeliveryStreet($order['DeliveryAddressStreet']);
         $integraOrder->setDeliveryAdditionalInfo($order['DeliveryAddressAdditionalInfo']);
@@ -494,7 +555,8 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 if ($ymd) {
                     $line = $ymd->format('Y-m-d\TH:i:s\.000-03:00');
                 } else {
-                    $integraModel->setMageError('Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro');
+                    $message = 'Motivo: Data inválida. Erros: a data deve seguir o padrão brasileiro';
+                    $integraModel->setMageError($message);
                     $integraModel->save();
                     return;
                 }
@@ -504,14 +566,149 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         }
     }
 
-    public static function updateOrder($order)
+    public static function nfeUpdate($commentData, $integraModel, $line, $orderId)
+    {
+        $formatoNfe = Mage::getStoreConfig('integracommerce/order_status/nfe_model', Mage::app()->getStore());
+        $messageNF = "Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.";
+
+        if (count($line) < 4 && $formatoNfe == 'old') {
+            return Mage::throwException($messageNF);
+        }
+
+        //VERIFICANDO FORMATO UTILIZADO
+        if ($formatoNfe == 'new') {
+            $preparedNfe = self::nfeFormat($commentData);
+            if (empty($preparedNfe)) {
+                return Mage::throwException($messageNF);
+            }
+
+            $line[0] = $preparedNfe['numeroNota'];
+            $line[1] = $preparedNfe['serieNota'];
+            $return = self::checkDate($preparedNfe['dataEmissaoNota'], $integraModel);
+            $line[2] = $return;
+            if (strlen($preparedNfe['chaveNota']) < 44) {
+                $line[3] = str_pad($preparedNfe['chaveNota'], 44, "0");
+            } else {
+                $line[3] = $preparedNfe['chaveNota'];
+            }
+
+            $line[4] = $preparedNfe['xmlNota'];
+        } else {
+            //CHECANDO DATA DE EMISSAO DA FATURA
+            $return = self::checkDate($line[2], $integraModel);
+            $line[2] = $return;
+
+            if (strlen($line[3]) < 44) {
+                $line[3] = str_pad($line[3], 44, "0");
+            }
+        }
+
+        $body = array(
+            "IdOrder" => $orderId,
+            "OrderStatus" => "INVOICED",
+            "InvoicedNumber" => $line[0],
+            "InvoicedLine" => $line[1],
+            "InvoicedIssueDate" => $line[2],
+            "InvoicedKey" => $line[3],
+            "InvoicedDanfeXml" => (empty($line[4]) ? "" : $line[4])
+        );
+
+        return $body;
+    }
+
+    public static function shipUpdate($integraModel, $line, $orderId)
+    {
+        if (count($line) !== 5) {
+            $message = "Não foi possivel enviar os dados de Rastreio. Informações inválidas.";
+            return Mage::throwException($message);
+        }
+
+        //CHECANDO DATA ESTIMADA DE ENTREGA
+        $return = self::checkDate($line[2], $integraModel);
+        $line[2] = $return;
+
+        //CHECANDO DATA DE ENTREGA A TRANSPORTADORA
+        $return = self::checkDate($line[3], $integraModel);
+        $line[3] = $return;
+
+        $body = array(
+            "IdOrder" => $orderId,
+            "OrderStatus" =>"SHIPPED",
+            "ShippedTrackingUrl" => (empty($line[0]) ? "" : $line[0]),
+            "ShippedTrackingProtocol" => (empty($line[1]) ? "" : $line[1]),
+            "ShippedEstimatedDelivery" => $line[2],
+            "ShippedCarrierDate" => $line[3],
+            "ShippedCarrierName" => $line[4]
+        );
+
+        return $body;
+    }
+
+    public static function delivUpdate($commentData, $integraModel, $orderId)
+    {
+        //CHECANDO DATA ESTIMADA DE ENTREGA
+        $return = self::checkDate($commentData, $integraModel);
+        $deliveredDate = $return;
+
+        $body = array(
+            "IdOrder" => $orderId,
+            "OrderStatus" => "DELIVERED",
+            "DeliveredDate" => $deliveredDate
+        );
+
+        return $body;
+    }
+
+    public static function failUpdate($integraModel, $line, $orderId)
+    {
+        if (count($line) !== 2) {
+            $message = "Não foi possivel enviar os dados de Falha no Envio. Informações inválidas.";
+            return Mage::throwException($message);
+        }
+
+        $return = self::checkDate($line[1], $integraModel);
+        $line[1] = $return;
+
+        $body = array(
+            "IdOrder" => $orderId,
+            "OrderStatus" => "SHIPMENT_EXCEPTION",
+            "ShipmentExceptionObservation" => $line[0],
+            "ShipmentExceptionOccurrenceDate" => $line[1]
+        );
+
+        return $body;
+    }
+
+    public static function startUpdate($body, $integraModel)
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
-        $invoiceStatus = Mage::getStoreConfig('integracommerce/order_status/nota_fiscal', Mage::app()->getStore());
-        $shippingStatus = Mage::getStoreConfig('integracommerce/order_status/dados_rastreio', Mage::app()->getStore());
-        $integraModel = Mage::getModel('integracommerce/order')->load($order->getData('integracommerce_id'), 'integra_id');
-        $formatoNfe = Mage::getStoreConfig('integracommerce/order_status/nfe_model', Mage::app()->getStore());
         $url = 'https://' . $environment . '.integracommerce.com.br/api/Order';
+        $jsonBody = json_encode($body);
+        $return = Novapc_Integracommerce_Helper_Data::callCurl("PUT", $url, $jsonBody);
+
+        if ($return['httpCode'] !== 204) {
+            if (!empty($return['Errors'])) {
+                foreach ($return['Errors'] as $error) {
+                    $return = $error['Message'] . '. ';
+                };
+            } elseif ($return['httpCode'] == 200) {
+                $return = 'Dados inseridos';
+            } else {
+                $return = json_encode($return);
+            }
+
+            $integraModel->setIntegraError($return);
+            $integraModel->save();
+        }
+    }
+
+    public static function updateOrder($order)
+    {
+        $shippingStatus = Mage::getStoreConfig('integracommerce/order_status/dados_rastreio', Mage::app()->getStore());
+        $invoiceStatus = Mage::getStoreConfig('integracommerce/order_status/nota_fiscal', Mage::app()->getStore());
+        $integraModel = Mage::getModel('integracommerce/order')
+            ->load($order->getData('integracommerce_id'), 'integra_id');
+        $orderId = $order->getData('integracommerce_id');
 
         try {
             $status = $order->getStatus();
@@ -528,111 +725,19 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 $line[] = $_line;
             }
 
-            if ($status == $invoiceStatus && count($line) < 4 && $formatoNfe == 'old') {
-                throw new Exception("Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.");
-            } elseif ($status == $shippingStatus && count($line) !== 5) {
-                throw new Exception("Não foi possivel enviar os dados de Rastreio. Informações inválidas.");
-            } elseif ($status == 'shipexception' && count($line) !== 2) {
-                throw new Exception("Não foi possivel enviar os dados de Falha no Envio. Informações inválidas.");
-            }
-
             if (($invoiceStatus && !empty($invoiceStatus)) && $invoiceStatus == $status) {
-                //VERIFICANDO FORMATO UTILIZADO
-                if ($formatoNfe == 'new') {
-                    $preparedNfe = self::nfeFormat($commentData);
-                    if (empty($preparedNfe)) {
-                        throw new Exception("Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.");
-                    }
-
-                    $line[0] = $preparedNfe['numeroNota'];
-                    $line[1] = $preparedNfe['serieNota'];
-                    $return = self::checkDate($preparedNfe['dataEmissaoNota'], $integraModel);
-                    $line[2] = $return;
-                    if (strlen($preparedNfe['chaveNota']) < 44) {
-                        $line[3] = str_pad($preparedNfe['chaveNota'], 44, "0");
-                    } else {
-                        $line[3] = $preparedNfe['chaveNota'];
-                    }
-
-                    $line[4] = $preparedNfe['xmlNota'];
-                } else {
-                    //CHECANDO DATA DE EMISSAO DA FATURA
-                    $return = self::checkDate($line[2], $integraModel);
-                    $line[2] = $return;
-
-                    if (strlen($line[3]) < 44) {
-                        $line[3] = str_pad($line[3], 44, "0");
-                    }
-                }
-
-                $body = array(
-                    "IdOrder" => $order->getData('integracommerce_id'),
-                    "OrderStatus" => "INVOICED",
-                    "InvoicedNumber" => $line[0],
-                    "InvoicedLine" => $line[1],
-                    "InvoicedIssueDate" => $line[2],
-                    "InvoicedKey" => $line[3],
-                    "InvoicedDanfeXml" => (empty($line[4]) ? "" : $line[4])
-                );
+                $body = self::nfeUpdate($commentData, $integraModel, $line, $orderId);
             } elseif (($shippingStatus && !empty($shippingStatus)) && $shippingStatus == $status) {
-                //CHECANDO DATA ESTIMADA DE ENTREGA
-                $return = self::checkDate($line[2], $integraModel);
-                $line[2] = $return;
-
-                //CHECANDO DATA DE ENTREGA A TRANSPORTADORA
-                $return = self::checkDate($line[3], $integraModel);
-                $line[3] = $return;
-
-                $body = array(
-                    "IdOrder" => $order->getData('integracommerce_id'),
-                    "OrderStatus" =>"SHIPPED",
-                    "ShippedTrackingUrl" => (empty($line[0]) ? "" : $line[0]),
-                    "ShippedTrackingProtocol" => (empty($line[1]) ? "" : $line[1]),
-                    "ShippedEstimatedDelivery" => $line[2],
-                    "ShippedCarrierDate" => $line[3],
-                    "ShippedCarrierName" => $line[4]
-                );
+                $body = self::shipUpdate($integraModel, $line, $orderId);
             } elseif ($status == 'delivered') {
-                //CHECANDO DATA ESTIMADA DE ENTREGA
-                $return = self::checkDate($commentData, $integraModel);
-                $deliveredDate = $return;
-
-                $body = array(
-                    "IdOrder" => $order->getData('integracommerce_id'),
-                    "OrderStatus" => "DELIVERED",
-                    "DeliveredDate" => $deliveredDate
-                );
+                $body = self::delivUpdate($commentData, $integraModel, $orderId);
             } elseif ($status == 'shipexception') {
-                $return = self::checkDate($line[1], $integraModel);
-                $line[1] = $return;
-
-                $body = array(
-                    "IdOrder" => $order->getData('integracommerce_id'),
-                    "OrderStatus" => "SHIPMENT_EXCEPTION",
-                    "ShipmentExceptionObservation" => $line[0],
-                    "ShipmentExceptionOccurrenceDate" => $line[1]
-                );
+                $body = self::failUpdate($integraModel, $line, $orderId);
             }
 
             if (isset($body)) {
-                $jsonBody = json_encode($body);
-                $return = Novapc_Integracommerce_Helper_Data::callCurl("PUT", $url, $jsonBody);
-
-                if ($return['httpCode'] !== 204) {
-                    if (!empty($return['Errors'])) {
-                        foreach ($return['Errors'] as $error) {
-                            $return = $error['Message'] . '. ';
-                        };
-                    } elseif ($return['httpCode'] == 200) {
-                        $return = 'Dados inseridos';
-                    } else {
-                        $return = json_encode($return);
-                    }
-                    $integraModel->setIntegraError($return);
-                    $integraModel->save();
-                }
+                self::startUpdate($body, $integraModel);
             }
-
         } catch (Exception $e) {
             $integraModel->setIntegraError($e->getMessage());
             $integraModel->save();
@@ -683,19 +788,4 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         return false;
     }
-
-    public static function orderStatusFilter($status)
-    {
-        $collection = Mage::getResourceModel('sales/order_status_collection');
-        $collection->getSelect()->joinLeft(
-            array('state_table' => 'sales_order_status_state'),
-            'main_table.status=state_table.status',
-            array('state', 'is_default')
-        );
-
-        $collection->getSelect()->where('state_table.status=?', $status);
-
-        return $collection;
-    }
-
 }

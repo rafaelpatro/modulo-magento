@@ -12,16 +12,19 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Available extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
+class Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Available
+    extends Mage_Adminhtml_Block_Widget_Grid_Column_Renderer_Abstract
 {
     
     public function render(Varien_Object $row)
     {
         $value =  $row->getData($this->getColumn()->getIndex());
         if ($value || !empty($value)) {
-            return '<div style="background: green; width: 100%; padding: 1px; border-radius: 15px; text-align: center;"><span style="color: white;">Sim</span></div>';
+            $style = "background: green; width: 100%; padding: 1px; border-radius: 15px; text-align: center;";
+            return '<div style="' . $style . '"><span style="color: white;">Sim</span></div>';
         } else {
-            return '<div style="background: red; width: 100%; padding: 1px; border-radius: 15px; text-align: center;"><span style="color: white;">Não</span></div>';
+            $style = "background: red; width: 100%; padding: 1px; border-radius: 15px; text-align: center;";
+            return '<div style="' . $style . '"><span style="color: white;">Não</span></div>';
         }
     }
    

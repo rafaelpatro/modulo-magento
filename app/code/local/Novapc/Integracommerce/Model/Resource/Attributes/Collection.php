@@ -12,7 +12,8 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Model_Resource_Attributes_Collection extends Mage_Core_Model_Resource_Db_Collection_Abstract
+class Novapc_Integracommerce_Model_Resource_Attributes_Collection
+    extends Mage_Core_Model_Resource_Db_Collection_Abstract
 {
     public function _construct()
     {

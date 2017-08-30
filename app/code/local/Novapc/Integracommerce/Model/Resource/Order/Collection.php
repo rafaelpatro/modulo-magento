@@ -19,4 +19,61 @@ class Novapc_Integracommerce_Model_Resource_Order_Collection extends Mage_Core_M
         $this->_init('integracommerce/order');
     }
 
+    protected function _getClearSelect()
+    {
+        return $this->_buildClearSelect();
+    }
+
+    protected function _buildClearSelect($select = null)
+    {
+        if (empty($select)) {
+            $select = clone $this->getSelect();
+        }
+
+        $select->reset(Zend_Db_Select::ORDER);
+        $select->reset(Zend_Db_Select::LIMIT_COUNT);
+        $select->reset(Zend_Db_Select::LIMIT_OFFSET);
+        $select->reset(Zend_Db_Select::COLUMNS);
+
+        return $select;
+    }
+
+    public function addIdsToFilter($ordersIds = null, $limit = null, $offset = null)
+    {
+        $idsSelect = $this->_getClearSelect();
+        $idsSelect->columns('magento_order_id');
+        if (!empty($ordersIds)) {
+            $stringIds = implode(",", $ordersIds);
+            $idsSelect->where('entity_id in (' . $stringIds . ')');
+        }
+
+        $idsSelect->limit($limit, $offset);
+        $idsSelect->resetJoinLeft();
+
+        return $this->getConnection()->fetchCol($idsSelect, $this->_bindParams);
+    }
+
+    public function orderStatusFilter($status)
+    {
+        $collection = Mage::getResourceModel('sales/order_status_collection');
+        $collection->getSelect()->joinLeft(
+            array('state_table' => 'sales_order_status_state'),
+            'main_table.status=state_table.status',
+            array('state', 'is_default')
+        );
+
+        $collection->getSelect()->where('state_table.status=?', $status);
+
+        return $collection;
+    }
+
+    public function deleteOrders($ordersIds)
+    {
+        $write = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+        $write->delete(
+            $this->getMainTable(),
+            array('entity_id IN (?)' => $ordersIds)
+        );
+    }
 }

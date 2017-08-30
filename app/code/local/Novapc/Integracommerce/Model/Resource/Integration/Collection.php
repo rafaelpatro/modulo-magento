@@ -12,11 +12,33 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Model_Resource_Integration_Collection extends Mage_Core_Model_Resource_Db_Collection_Abstract
+class Novapc_Integracommerce_Model_Resource_Integration_Collection
+    extends Mage_Core_Model_Resource_Db_Collection_Abstract
 {
     public function _construct()
     {
         $this->_init('integracommerce/integration');
+    }
+
+    public function updateCategories($categoryIds, $attributeCode, $attrValue)
+    {
+        $tablePrefix = Mage::getConfig()->getTablePrefix();
+        if (!empty($tablePrefix)) {
+            $catTable = $tablePrefix . 'catalog_category_entity_int';
+        } else {
+            $catTable = 'catalog_category_entity_int';
+        }
+
+        $stringIds = implode(",", $categoryIds);
+        $attributeId = Mage::getResourceModel('eav/entity_attribute')
+            ->getIdByCode('catalog_category', $attributeCode);
+        $write = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+        $write->update(
+            $catTable,
+            array("value" => $attrValue),
+            "entity_id in (". $stringIds . ") AND attribute_id=" . $attributeId
+        );
     }
 
 }

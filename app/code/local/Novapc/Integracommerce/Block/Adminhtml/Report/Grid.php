@@ -14,6 +14,8 @@
 
 class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
+    const CONFIRM_MESSAGE = 'Esta ação removerá os itens da fila, inclusive caso ainda não tenha sido atualizado!';
+
     public function __construct()
     {
         parent::__construct();
@@ -107,18 +109,13 @@ class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_
             array(
                 'label'    => Mage::helper('integracommerce')->__('Excluir da Fila'),
                 'url'      => $this->getUrl('*/*/massDelete'),
-                'confirm'  => Mage::helper('integracommerce')->__('Tem certeza? Esta ação removerá os itens marcados da fila, inclusive caso ainda não tenha sido atualizado!')
+                'confirm'  => Mage::helper('integracommerce')->__(self::CONFIRM_MESSAGE)
             )
         );
 
         return $this;
     }
 
-    protected function _addColumnFilterToCollection($column)
-    {
-        return parent::_addColumnFilterToCollection($column);
-    }
-    
     public function getGridUrl() 
     {
         return $this->getUrl('*/*/grid', array('_current'=>true));

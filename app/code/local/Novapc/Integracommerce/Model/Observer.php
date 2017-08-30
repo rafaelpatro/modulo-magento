@@ -37,20 +37,26 @@ class Novapc_Integracommerce_Model_Observer
     {
         $order = $event->getEvent()->getOrder();
 
+        $orderItemIds = array();
         foreach ($order->getAllItems() as $item) {
-            $product = Mage::getModel('catalog/product')->load($item->getProductId());
+            $orderItemIds[] = $item->getProductId();
+        }
+
+        $productCollection = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addFieldToFilter('entity_id', array('in' => $orderItemIds))
+            ->addAttributeToSelect('*');
+
+        $updateIds = array();
+        foreach ($productCollection as $product) {
             if ($product->getData('integracommerce_active') == 0) {
-                return;
+                continue;
             }
 
-            $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-            $queueProductId = $insertQueue->getProductId();
-            if (!$queueProductId || empty($queueProductId)) {
-                $insertQueue = Mage::getModel('integracommerce/update');
-                $insertQueue->setProductId($product->getId());
-                $insertQueue->save();
-            }
+            $updateIds[] = $product->getId();
         }
+
+        Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updateIds);
 
         $integracommerceId = $order->getData('integracommerce_id');
         if (!empty($integracommerceId)) {
@@ -68,9 +74,13 @@ class Novapc_Integracommerce_Model_Observer
             return;
         }
 
-        foreach ($productIds as $id) {
-            $product = Mage::getModel('catalog/product')->load($id);
+        $productCollection = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addFieldToFilter('entity_id', array('in' => $productIds))
+            ->addAttributeToSelect('*');
 
+        $updatedIds = array();
+        foreach ($productCollection as $product) {
             if (array_key_exists("integracommerce_active", $attributesData)) {
                 $activate = $attributesData['integracommerce_active'];
             }
@@ -86,14 +96,10 @@ class Novapc_Integracommerce_Model_Observer
                 continue;
             }
 
-            $insertQueue = Mage::getModel('integracommerce/update')->load($id, 'product_id');
-            $queueProductId = $insertQueue->getProductId();
-            if (!$queueProductId || empty($queueProductId)) {
-                $insertQueue = Mage::getModel('integracommerce/update');
-                $insertQueue->setProductId($id);
-                $insertQueue->save();
-            }
+            $updatedIds[] = $product->getId();
         }
+
+        $insertQueue = Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updatedIds);
     }
 
     public function productQueue(Varien_Event_Observer $event)
@@ -161,7 +167,7 @@ class Novapc_Integracommerce_Model_Observer
 
             $requestedDay = $requestedDay + $requested;
             $requestedWeek = $requestedWeek + $requested;
-            $requestTime = Mage::getSingleton('core/date')->date('Y-m-d H:i:s');
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
             $productModel->setRequestedHour($requestedHour);

@@ -2,15 +2,20 @@
 <div class="content-header">
 <table cellspacing="0">
     <tr>
-        <td style="width:50%;"><h3 class="icon-head head-orders"><?php echo Mage::helper('integracommerce')->__('Integracommerce Orders') ?></h3></td>
+        <td style="width:50%;"><h3 class="icon-head head-orders">Relatório de Pedidos</h3></td>
         <td class="a-right">
 
-        	<?php $this->_addButton('add_new', array(
-        										'label'   => Mage::helper('integracommerce')->__('Baixar Pedidos'),
-        										'onclick' => 'setLocation(\'' . $this->getUrl('integracommerce/adminhtml_orders/integrate') . '\')',
-        										'class'   => 'add'
-    											));  
-    		?>
+            <?php
+            $url = $this->getUrl('integracommerce/adminhtml_orders/integrate');
+            $this->_addButton(
+                'add_new',
+                array(
+                    'label'   => $this->escapeHtml('Baixar Pedidos'),
+                    'onclick' => 'setLocation(\'' . $url . '\')',
+                    'class'   => 'add'
+                )
+            );
+            ?>
 
             <?php echo $this->getButtonsHtml() ?>
         </td>
