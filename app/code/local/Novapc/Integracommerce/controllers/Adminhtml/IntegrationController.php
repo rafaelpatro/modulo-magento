@@ -147,7 +147,10 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $requestedWeek = $productModel->getRequestedWeek();
             $requestedInitial = $productModel->getInitialHour();
             $requestedHour = 100;
-            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested);
+            $queueIds = Mage::getModel('integracommerce/update')
+                ->getCollection()
+                ->getProductIds();
+            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested, $queueIds);
 
             if ($alreadyRequested == $requestedHour) {
                 $requested = 0;

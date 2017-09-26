@@ -14,6 +14,20 @@
 
 class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 {
+    public static function getStore()
+    {
+        $store = Mage::getModel('core/store')->load(1);
+
+        if ($store->getId()) {
+            return $store;
+        } else {
+            $store = Mage::app()->getStore();
+            if ($store->getId()) {
+                return $store;
+            }
+        }
+    }
+
     public static function updateStock($product)
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
@@ -31,7 +45,12 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $stockItem = Mage::getModel('cataloginventory/stock_item')
             ->loadByProduct($product->getId());
 
-        $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
+        $isInStock = (int) $stockItem['is_in_stock'];
+        if ($isInStock == 0) {
+            $stockQuantity = 0;
+        } else {
+            $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
+        }
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         if ($productControl == 'sku') {
@@ -100,7 +119,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $return = self::callCurl("PUT", $url, $jsonBody);
         }
 
-        if ($return['httpCode'] !== 204 && $return['httpCode'] !== 201) {
+        $httpCode = (int) $return['httpCode'];
+        if ($httpCode !== 204 && $httpCode !== 201) {
             return array($jsonBody, $return, $product->getId());
         }
 
@@ -238,7 +258,13 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $stockItem = Mage::getModel('cataloginventory/stock_item')
                ->loadByProduct($product->getId());
-        $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
+
+        $isInStock = (int) $stockItem['is_in_stock'];
+        if ($isInStock == 0) {
+            $stockQuantity = 0;
+        } else {
+            $stockQuantity = (int) strstr($stockItem['qty'], '.', true);
+        }
 
         $idSku = $product->getData($productControl);
 
@@ -272,10 +298,10 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             ),  
             "UrlImages" => $pictures,  
             "Attributes" => $_attrs
-        );  
+        );
 
         $jsonBody = json_encode($body);
-
+        
         if ($product->getData('integracommerce_active') == 0) {
             $return = self::callCurl("POST", $url, $jsonBody);
         } elseif ($product->getData('integracommerce_active') == 1) {
@@ -284,7 +310,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $productId = $product->getId();
 
-        if ($return['httpCode'] !== 204 && $return['httpCode'] !== 201) {
+        $httpCode = (int) $return['httpCode'];
+        if ($httpCode !== 204 && $httpCode !== 201) {
             return array($jsonBody, $return, $product->getId());
         }
 
@@ -323,20 +350,27 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
     public static function checkPrice($product, $configProduct = null)
     {
         $normalPrice = $product->getPrice();
+
+        if (empty($normalPrice) || $normalPrice < 1) {
+            if ($configProduct->getId()) {
+                $product = $configProduct;
+                $normalPrice = $product->getPrice();
+            }
+        }
+
         $specialPrice = $product->getSpecialPrice();
         if (empty($specialPrice)) {
             $specialPrice = $normalPrice;
-        }
-
-        if (!$normalPrice || empty($normalPrice) || $normalPrice < 1) {
-            if (!empty($configProduct)) {
-                if ($configProduct->getId()) {
-                    $normalPrice = $configProduct->getPrice();
-                    $specialPrice = $configProduct->getSpecialPrice();
-                    if (!$specialPrice || empty($specialPrice)) {
-                        $specialPrice = $normalPrice;
-                    }
+        } else {
+            $specialFrom = $product->getSpecialFromDate();
+            $now = self::currentDate('Y-m-d H:i:s', 'string');
+            if (!empty($specialFrom) && $specialFrom <= $now) {
+                $specialTo = $product->getSpecialToDate();
+                if (!empty($specialTo) && $specialTo <= $now) {
+                    $specialPrice = $normalPrice;
                 }
+            } else {
+                $specialPrice = $normalPrice;
             }
         }
 
@@ -389,25 +423,17 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $configProd = Mage::getStoreConfig('integracommerce/general/configprod', Mage::app()->getStore());
 
-        $normalPrice = $product->getPrice();
-        $specialPrice = $product->getSpecialPrice();
-        if (!$specialPrice || empty($specialPrice)) {
-            $specialPrice = $normalPrice;
-        }
-
-        if ((empty($normalPrice) || $normalPrice < 1) && !empty($configurableIds) && $configProd == 1) {
+        if (!empty($configurableIds) && $configProd == 1) {
             $configCollection = Mage::getModel('catalog/product')
                 ->getCollection()
                 ->addFieldToFilter('entity_id', array('in' => $configurableIds))
                 ->addAttributeToSelect('*');
 
             foreach ($configCollection as $configurableProduct) {
-                $normalPrice = $configurableProduct->getPrice();
-                $specialPrice = $configurableProduct->getSpecialPrice();
-                if (empty($specialPrice)) {
-                    $specialPrice = $normalPrice;
-                }
+                list($normalPrice, $specialPrice) = self::checkPrice($product, $configurableProduct);
             }
+        } else {
+            list($normalPrice, $specialPrice) = self::checkPrice($product);
         }
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());

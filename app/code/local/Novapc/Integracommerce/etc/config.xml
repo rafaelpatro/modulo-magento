@@ -16,7 +16,7 @@
 <config>
 	<modules>
 		<Novapc_Integracommerce>
-			<version>2.0.4</version>
+			<version>2.0.5</version>
 		</Novapc_Integracommerce>
 	</modules>
     <frontend>
@@ -97,7 +97,7 @@
                     </Novapc_Integracommerce>
                 </observers>
             </catalog_product_save_after>
-           <cataloginventory_stock_item_save_after>
+            <cataloginventory_stock_item_save_after>
                 <observers>
                     <Novapc_Integracommerce>
                         <class>Novapc_Integracommerce_Model_Observer</class>
@@ -114,7 +114,16 @@
                         <type>singleton</type>
                     </Novapc_Integracommerce>
                 </observers>
-            </sales_order_save_after>                                  
+            </sales_order_save_after>
+            <sales_order_status_history_save_after>
+                <observers>
+                    <Novapc_Integracommerce>
+                        <class>Novapc_Integracommerce_Model_Observer</class>
+                        <method>updateStatus</method>
+                        <type>singleton</type>
+                    </Novapc_Integracommerce>
+                </observers>
+            </sales_order_status_history_save_after>
         </events>
 		<resources>
             <integracommerce_setup>

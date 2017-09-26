@@ -91,13 +91,15 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
     public static function createCustomer($order)
     {
         $ieAttribute = Mage::getStoreConfig('integracommerce/attributes/ierg', Mage::app()->getStore());
+        $store = Novapc_Integracommerce_Helper_Data::getStore();
         $customer = Mage::getModel("customer/customer");
-        $customer->setWebsiteId(Mage::app()->getWebsite()->getId());
-        $customer->setStore(Mage::app()->getStore());
+        $customer->setWebsiteId($store->getWebsiteId());
+        $customer->setStore($store);
      
         $customer->setFirstname(
             (empty($order['CustomerPfName']) ? $order['CustomerPjCorporatename'] : $order['CustomerPfName'])
         );
+
         $customer->setLastname('.');
         $customer->setData(
             'taxvat',
@@ -336,6 +338,8 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         foreach ($productCollection as $key => $mageProduct) {
             $skuId = $mageProduct->getData($productControl);
+            $productId = $mageProduct->getId();
+            $productsData[$skuId]['product_id'] = $productId;
 
             $newPrice = str_replace(',', '.', $productsData[$skuId]['Price']);
             $rowTotal = $newPrice * $productsData[$skuId]['Quantity'];
@@ -343,7 +347,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 ->setStoreId($storeId)
                 ->setQuoteItemId(0)
                 ->setQuoteParentItemId(null)
-                ->setProductId($mageProduct->getId())
+                ->setProductId($productId)
                 ->setProductType($mageProduct->getTypeId())
                 ->setQtyBackordered(null)
                 ->setTotalQtyOrdered($productsData[$skuId]['Quantity'])
@@ -357,8 +361,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 ->setRowTotal($rowTotal)
                 ->setBaseRowTotal($rowTotal);
 
-                $subTotal += $rowTotal;
-                $mageOrder->addItem($orderItem);
+            $subTotal += $rowTotal;
+            $mageOrder->addItem($orderItem);
+            Mage::getSingleton('cataloginventory/stock')->registerItemSale($orderItem);
         }
 
         $mageOrder->setSubtotal($subTotal)
@@ -386,7 +391,12 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $transaction->addCommitCallback(array($mageOrder, 'place'));
             $transaction->addCommitCallback(array($mageOrder, 'save'));
             $transaction->save();
-        } catch (Exception $e){
+        } catch (Exception $e) {
+            foreach ($productsData as $product) {
+                Mage::getSingleton('cataloginventory/stock')
+                    ->backItemQty($product['product_id'], $product['Quantity']);
+            }
+
             $integraModel->setMageError($e->getMessage());
             $integraModel->save();
         }
@@ -587,9 +597,11 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $return = self::checkDate($preparedNfe['dataEmissaoNota'], $integraModel);
             $line[2] = $return;
             if (strlen($preparedNfe['chaveNota']) < 44) {
-                $line[3] = str_pad($preparedNfe['chaveNota'], 44, "0");
+                $trimData = trim($preparedNfe['chaveNota'], " ");
+                $line[3] = str_pad($trimData, 44, "0");
             } else {
-                $line[3] = $preparedNfe['chaveNota'];
+                $trimData = trim($preparedNfe['chaveNota'], " ");
+                $line[3] = $trimData;
             }
 
             $line[4] = $preparedNfe['xmlNota'];
@@ -599,7 +611,10 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $line[2] = $return;
 
             if (strlen($line[3]) < 44) {
-                $line[3] = str_pad($line[3], 44, "0");
+                $trimData = trim($line[3], " ");
+                $line[3] = str_pad($trimData, 44, "0");
+            } else {
+                $trimData = trim($line[3], " ");
             }
         }
 
@@ -693,16 +708,21 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 };
             } elseif ($return['httpCode'] == 200) {
                 $return = 'Dados inseridos';
+                $integraModel->setOrderStatus($body['OrderStatus']);
+                $integraModel->save();
             } else {
                 $return = json_encode($return);
             }
 
             $integraModel->setIntegraError($return);
             $integraModel->save();
+        } else {
+            $integraModel->setOrderStatus($body['OrderStatus']);
+            $integraModel->save();
         }
     }
 
-    public static function updateOrder($order)
+    public static function updateOrder($order, $comment)
     {
         $shippingStatus = Mage::getStoreConfig('integracommerce/order_status/dados_rastreio', Mage::app()->getStore());
         $invoiceStatus = Mage::getStoreConfig('integracommerce/order_status/nota_fiscal', Mage::app()->getStore());
@@ -711,9 +731,8 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $orderId = $order->getData('integracommerce_id');
 
         try {
-            $status = $order->getStatus();
-            $comment = self::getHistoryByStatus($order, $status);
-            $commentData = $comment->getData('comment');
+            $status = $comment->getStatus();
+            $commentData = $comment->getComment();
 
             $lines = explode('|', $commentData);
             if ((empty($lines) && $status !== 'delivered') || empty($commentData)) {
@@ -736,6 +755,11 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             }
 
             if (isset($body)) {
+                $actual = $integraModel->getOrderStatus();
+                if ($status == $actual) {
+                    return;
+                }
+
                 self::startUpdate($body, $integraModel);
             }
         } catch (Exception $e) {
@@ -765,9 +789,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $preparedArray['numeroNota'] = substr($commentArray[0], 13);
         $preparedArray['serieNota'] = substr($commentArray[1], 7);
         $preparedArray['dataEmissaoNota'] = substr($commentArray[2], 18);
-        $preparedArray['chaveNota'] = substr($commentArray[3], 17);
+        $preparedArray['chaveNota'] = substr($commentArray[3], 15);
         if (empty($preparedArray['chaveNota']) || preg_match("/[a-z]/i", $preparedArray['chaveNota'])) {
-            $preparedArray['chaveNota'] = substr($commentArray[4], 17);
+            $preparedArray['chaveNota'] = substr($commentArray[4], 15);
         }
 
         $preparedArray['xmlNota'] = substr($commentArray[5], 15);

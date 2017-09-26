@@ -20,7 +20,8 @@ class Novapc_Integracommerce_Model_Observer
         $item = $event->getEvent()->getItem();
         $product = Mage::getModel('catalog/product')->load($item->getId());
 
-        if ($product->getData('integracommerce_active') == 0) {
+        $isActive = (int) $product->getData('integracommerce_active');
+        if ($isActive !== 1) {
             return;
         }
 
@@ -49,7 +50,8 @@ class Novapc_Integracommerce_Model_Observer
 
         $updateIds = array();
         foreach ($productCollection as $product) {
-            if ($product->getData('integracommerce_active') == 0) {
+            $isActive = (int) $product->getData('integracommerce_active');
+            if ($isActive !== 1) {
                 continue;
             }
 
@@ -57,10 +59,23 @@ class Novapc_Integracommerce_Model_Observer
         }
 
         Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updateIds);
+    }
 
+    public function updateStatus(Varien_Event_Observer $event)
+    {
+        $comment = $event->getDataObject();
+        $orderId = $comment->getParentId();
+        $createdAt = $comment->getCreatedAt();
+        $now = new DateTime('NOW');
+        $formatedNow = $now->format('Y-m-d H:i:s');
+        if ($formatedNow !== $createdAt) {
+            return;
+        }
+
+        $order = Mage::getModel('sales/order')->load($orderId);
         $integracommerceId = $order->getData('integracommerce_id');
         if (!empty($integracommerceId)) {
-            $responseStatus = Novapc_Integracommerce_Helper_OrderData::updateOrder($order);
+            Novapc_Integracommerce_Helper_OrderData::updateOrder($order, $comment);
         }
     }
 
@@ -105,8 +120,8 @@ class Novapc_Integracommerce_Model_Observer
     public function productQueue(Varien_Event_Observer $event)
     {
         $product = $event->getProduct();
-
-        if ($product->getData('integracommerce_active') == 0) {
+        $isActive = (int) $product->getData('integracommerce_active');
+        if ($isActive !== 1) {
             return;
         }
 

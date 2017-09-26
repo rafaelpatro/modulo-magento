@@ -497,9 +497,18 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
     }    
 
-    public static function forceUpdate($alreadyRequested)
+    public static function forceUpdate($alreadyRequested, $queueCollection = null)
     {
-        $queueCollection = Mage::getModel('integracommerce/update')->getCollection()->getProductIds();
+        if (empty($queueCollection)) {
+            $queueCollection = Mage::getModel('integracommerce/update')
+                ->getCollection()
+                ->addFieldToFilter('product_error', array('null' => true))
+                ->addFieldToFilter('sku_error', array('null' => true))
+                ->addFieldToFilter('price_error', array('null' => true))
+                ->addFieldToFilter('stock_error', array('null' => true))
+                ->getProductIds();
+        }
+
         $productCollection = Mage::getModel('catalog/product')->getCollection()
             ->addFieldToFilter('entity_id', array('in' => $queueCollection))
             ->addAttributeToSelect('*');
@@ -519,7 +528,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if ($errorId == $productId) {
                 Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'price');
             } else {
-                Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'price');
+                Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 0, 'price');
             }
 
             list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updateStock($product);
@@ -527,7 +536,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if ($errorId == $productId) {
                 Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'stock');
             } else {
-                Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'stock');
+                Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 0, 'stock');
             }
 
             $alreadyRequested++;
