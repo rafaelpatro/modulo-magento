@@ -1,10 +1,12 @@
 # Módulo de integração Integracommerce e Magento
 
 ### Versão Atual
-#### 2.0.5
+#### 2.0.7
 
 **IMPORTANTE**
 ===============
+> Após a instalação da versão 2.0.7 é necessário acessar as configurações do módulo navegando até "Integracommerce -> Configuração", na aba "Geral", no campo "Limite de Requisições" e clique em "Checar", uma mensagem de sucesso deve ser retornada, este processo deve ser realizado para que o modulo cheque o limite de requisições disponível para sua conta. Para maiores informações contate nosso suporte.
+
 > Caso há instalado a versão 2.0.1 ou menor, após instalação da 2.0.5 é necessário acessar as configurações do módulo navegando até "Integracommerce -> Configuração" e reconfigurar alguns campos. Para maiores informações contate nosso suporte.
 
 > Se há instalado a versão 2.0.1 é necessário acessar as configurações do módulo navegando até "Integracommerce -> Configuração", na aba "Configurações de Pedidos" vá até o campo "Modelo de Nota Fiscal" e selecione a opção "Formato 1" para utilizar o modelo de envio de Nota Fiscal antigo. Para maiores informações contate nosso suporte.
