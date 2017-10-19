@@ -14,19 +14,22 @@
 
 class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abstract
 {
-    public static function integrateCategory($requested)
+    public static function integrateCategory($requested, $limits)
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
+        $collSize = (int) $limits['minute'];
         //FORCA O AMBIENTE COMO ADMIN DEVIDO A TABELAS FLAT COM MULTISTORE
         Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
-
         $categories = Mage::getModel('catalog/category')
                         ->getCollection()
                         ->addFieldToFilter('integracommerce_active', array('neq' => 1))
                         ->setOrder('level', 'ASC')
-                        ->addAttributeToSelect('*');
+                        ->addAttributeToSelect('*')
+                        ->setPageSize($collSize)
+                        ->setCurPage(1);
 
         $createdIds = array();
+        $requestedMin = 0;
         foreach ($categories as $category) {
             $catLevel = $category->getData('level');
 
@@ -49,12 +52,20 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 $createdIds[] = $catId;
             }
 
+            $requestedMin++;
             $requested++;
-            if ($requested == 600) {
+            if ($requested == $limits['hour']) {
                 break;
             }
 
-            sleep(2);
+            usleep(500000);
+
+            $time = strtotime('s');
+            $seconds = date("s", $time);
+            if ($requestedMin >= $limits['minute'] && $seconds < 60) {
+                $waitFor = 60 - $seconds;
+                time_sleep_until(time()+$waitFor);
+            }
         }
 
         if (!empty($createdIds)) {
@@ -91,30 +102,33 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         return $return['httpCode'];
     }
 
-    public static function integrateProduct($requested)
+    public static function integrateProduct($requested, $limits)
     {
+        $collSize = (int) $limits['minute'];
         $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if ($exportType == 1) {
             $collection = Mage::getModel('catalog/product')->getCollection()
                             ->addFieldToFilter('integracommerce_sync', 1)
                             ->addFieldToFilter('integracommerce_active', 0)
-                            ->addAttributeToSelect('*');
+                            ->addAttributeToSelect('*')
+                            ->setPageSize($collSize)
+                            ->setCurPage(1);
 
-            $return = self::productSelection($collection, $requested);
+            $return = self::productSelection($collection, $requested, $limits);
         } elseif ($exportType == 2) {
             $collection = Mage::getModel('catalog/product')->getCollection()
                             ->addFieldToFilter('integracommerce_active', 0)
                             ->addAttributeToSelect('*')
-                            ->setPageSize(300)
+                            ->setPageSize($collSize)
                             ->setCurPage(1);
 
-            $return = self::productSelection($collection, $requested);
+            $return = self::productSelection($collection, $requested, $limits);
         }
 
         return $return;
     }
 
-    public static function productSelection($collection, $requested)
+    public static function productSelection($collection, $requested, $limits)
     {
         $initialAttributes = Mage::getStoreConfig('integracommerce/general/attributes', Mage::app()->getStore());
         $attributes = explode(',', $initialAttributes);
@@ -122,7 +136,10 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         $attrCollection = Mage::getModel('integracommerce/attributes')->load(1, 'entity_id');
         $loadedAttrs = self::loadAttr($attrCollection);
         $configProd = Mage::getStoreConfig('integracommerce/general/configprod', Mage::app()->getStore());
+        $dataHelper = Mage::helper('integracommerce/data');
 
+        $requestedMin = 0;
+        $seconds = 0;
         foreach ($collection as $product) {
             $prodType = $product->getTypeId();
             $height = $product->getData($loadedAttrs['4']);
@@ -145,16 +162,18 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             //VERIFICA SE O PRODUTO ESTA ASSOCIADO A CONFIGURABLES, SE SIM E A CONFIGURACAO FOR PRODUTO UNICO
             //PREPARA PARA ENVIAR O CONFIGURABLE COMO PRODUCT E ASSOCIAR O SIMPLE COMO SKU
             if ($prodType == 'simple' && $configProd == 1) {
-                $configRequested = self::configurableProduct(
-                    $product, $environment, $loadedAttrs, $requested, $initialAttributes, $attributes
-                );
-                if (!empty($configRequested)) {
+                list($configRequested, $requestedMin) = self::configurableProduct(
+                    $product, $environment, $loadedAttrs, $requested, $initialAttributes,
+                        $attributes, $limits, $requestedMin);
+
+                if ($configRequested > 0) {
                     $requested = $requested + $configRequested;
                     continue;
                 }
             }
 
-            if ($prodType == 'configurable' && $product->getData('integracommerce_active') == 0) {
+            $isActive = (int) $product->getData('integracommerce_active');
+            if ($prodType == 'configurable' && $isActive == 0) {
                 continue;
             }
 
@@ -174,6 +193,8 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             }
 
             if ($prodType == 'configurable') {
+                $requested++;
+                $requestedMin++;
                 continue;
             }
 
@@ -182,7 +203,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             $idProduct = $product->getData($productControl);
 
             $skuAttrs = self::prepareSkuAttributes($product, null);
-            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku(
+            list($jsonBody, $response, $errorId) = $dataHelper::newSku(
                 $product, $pictures, $skuAttrs, $loadedAttrs, $idProduct, $environment, null
             );
 
@@ -193,24 +214,35 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'sku');
             }
 
+            $requestedMin++;
             $requested++;
-            if ($requested == 600) {
+            if ($requested == $limits['hour']) {
                 return $requested;
             }
 
-            sleep(2);
+            usleep(500000);
+
+            $time = strtotime('s');
+            $seconds = date("s", $time);
+            if ($requestedMin >= $limits['minute'] && $seconds < 60) {
+                $waitFor = 60 - $seconds;
+                time_sleep_until(time()+$waitFor);
+            }
         }
 
         return $requested;
     }
 
-    public static function configurableProduct($product, $environment, $loadAtr, $rqtd, $iniAttrs, $attributes)
+    public static function configurableProduct($product, $environment, $loadAtr, $rqtd, $iniAttrs,
+                                               $attributes, $limits, $requestedMin)
     {
         $cfgIds = Mage::getModel('catalog/product_type_configurable')->getParentIdsByChild($product->getId());
 
         if (empty($cfgIds)) {
-            return;
+            return array(0, $requestedMin);
         }
+
+        $dataHelper = Mage::helper('integracommerce/data');
 
         //PREPARA AS INFORMACOES DO PRODUTO SIMPLES PARA O ENVIO
         $configRequested = 0;
@@ -224,6 +256,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             ->addAttributeToSelect('*');
 
         /*PARA CADA PRODUTO CONFIGURAVEL VINCULADO, O MODULO IRA FAZER O ENVIO DO CONFIGURAVEL E DO SIMPLES*/
+        $seconds = 0;
         foreach ($configCollection as $configurableProduct) {
             $configurableId = $configurableProduct->getId();
             $simpleAttrs = self::prepareSkuAttributes($product, $configurableId);
@@ -253,11 +286,11 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
             //ENVIA O PRODUTO SIMPLES PARA O INTEGRA
             if (empty($simplePics) || !$simplePics) {
-                list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku(
+                list($jsonBody, $response, $errorId) = $dataHelper::newSku(
                     $product, $pictures, $simpleAttrs, $loadAtr, $idProduct, $environment, $configurableProduct
                 );
             } else {
-                list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::newSku(
+                list($jsonBody, $response, $errorId) = $dataHelper::newSku(
                     $product, $simplePics, $simpleAttrs, $loadAtr, $idProduct, $environment, $configurableProduct
                 );
             }
@@ -269,16 +302,24 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $idSimple, 1, 'sku');
             }
 
+            $requestedMin++;
             $configRequested++;
             $rqtd++;
-            if ($rqtd == 600) {
-                return $configRequested;
+            $time = strtotime('s');
+            $seconds = date("s", $time);
+            if ($rqtd == $limits['hour']) {
+                return array($configRequested, $requestedMin);
             }
 
-            sleep(2);
+            usleep(500000);
+
+            if ($requestedMin >= $limits['minute'] && $seconds < 60) {
+                $waitFor = 60 - $seconds;
+                time_sleep_until(time()+$waitFor);
+            }
         }
 
-        return $configRequested;
+        return array($configRequested, $requestedMin);
     }
 
     public static function prepareAttributes($product, $initialAttributes, $attributes)
@@ -497,7 +538,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
     }    
 
-    public static function forceUpdate($alreadyRequested, $queueCollection = null)
+    public static function forceUpdate($alreadyRequested, $limits, $queueCollection = null)
     {
         if (empty($queueCollection)) {
             $queueCollection = Mage::getModel('integracommerce/update')
@@ -509,13 +550,27 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 ->getProductIds();
         }
 
+        $collSize = (int) $limits['minute'];
         $productCollection = Mage::getModel('catalog/product')->getCollection()
             ->addFieldToFilter('entity_id', array('in' => $queueCollection))
-            ->addAttributeToSelect('*');
+            ->addAttributeToSelect('*')
+            ->setPageSize($collSize)
+            ->setCurPage(1);
 
-        $requested = self::productSelection($productCollection, $alreadyRequested);
+        $requested = self::productSelection($productCollection, $alreadyRequested, $limits);
+        $dataHelper = Mage::helper('integracommerce/data');
 
+        $productModel = Mage::getModel('integracommerce/integration')->load('Product Update', 'integra_model');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, '(PUT) api/Price');
+
+        $requestedMin = 0;
+        $executedSecs = 0;
         foreach ($productCollection as $product) {
+            $productStatus = $product->getStatus();
+            if ($productStatus == 2) {
+                continue;
+            }
+
             $productId = $product->getId();
 
             $productType = $product->getTypeId();
@@ -523,7 +578,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 continue;
             }
 
-            list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updatePrice($product);
+            list($jsonBody, $response, $errorId) = $dataHelper::updatePrice($product);
             //VERIFICANDO ERROS DE PRECO
             if ($errorId == $productId) {
                 Novapc_Integracommerce_Helper_Data::checkError($jsonBody, $response, $errorId, 0, 'price');
@@ -543,84 +598,60 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if ($alreadyRequested == $requested) {
                 break;
             }
+
+            usleep(500000);
+
+            $requestedMin++;
+            $time = strtotime('s');
+            $seconds = date("s", $time);
+            if ($requestedMin >= $limits['minute'] && $seconds < 60) {
+                $waitFor = 60 - $seconds;
+                time_sleep_until(time()+$waitFor);
+            }
         }
 
         return $requested;
     }
 
-    public static function requestLimit($method)
-    {
-        if ($method == 'get') {
-            $hour = 900;
-            $day = 10800;
-            $week = 75000;
-        } elseif ($method == 'post' || $method == 'put') {
-            $hour = 600;
-            $day = 7200;
-            $week = 75000;
-        } elseif ($method == 'getid') {
-            $hour = 1800;
-            $day = 21600;
-            $week = 75000;
-        }
-
-        return array($hour, $day, $week);
-    }
-
     public static function checkRequest($model, $method)
     {
-        list($hour, $day, $week) = self::requestLimit($method);
+        $requestModel = Mage::getModel('integracommerce/request')->load($method, 'name');
+        $limits = array();
 
-        /*CARREGANDO A QUANTIDADE DE REQUISICOES POR TEMPO*/
+        if (!$requestModel->getId()) {
+            $limits['message'] = 'Não foi encontrada a configuração de limites de requisição. Por favor, entre 
+            em contato com nosso suporte.';
+
+            return $limits;
+        }
+
+        $limits['minute'] = (int) $requestModel->getMinute();
+        $limits['hour'] = (int) $requestModel->getHour();
+
+        /*CARREGANDO A QUANTIDADE DE REQUISICOES JA FEITAS NA ULTIMA HORA*/
         $requestedHour = $model->getRequestedHour();
-        $requestedDay = $model->getRequestedDay();
-        $requestedWeek = $model->getRequestedWeek();
 
         /*CARREGANDO O HORARIO DA ULTIMA REQUISICAO*/
-        $status = new DateTime($model->getStatus());
-        $initialHour = new DateTime($model->getInitialHour());
+        $timeZone = Mage::getStoreConfig('general/locale/timezone');
+        $status = new DateTime($model->getStatus(), new DateTimeZone($timeZone));
         $now = Novapc_Integracommerce_Helper_Data::currentDate();
-        $diff = date_diff($status, $now);
-        $diffInitial = date_diff($initialHour, $now);
+        $diff = date_diff($now, $status);
 
         //CHECANDO REQUISICOES HORA
-        if ($requestedHour >= $hour && $diff->h < 1) {
-            $message = 'O limite de ' . $hour . ' requisições por hora foi atingido, por favor, tente mais tarde.';
+        if ($requestedHour >= $limits['hour'] && $diff->h < 1) {
+            $limits['message'] = 'O limite de requisições por hora foi atingido, por favor, tente mais tarde.';
         } elseif ($diff->h >= 1) {
             /*SE A DIFERENCA DE HORAS FOR MAIOR OU IGUAL A UM LIBERA O METODO*/
             $model->setRequestedHour(0);
             $model->setAvailable(1);
             $model->save();
-        } elseif ($requestedHour < $hour && $diff->h < 1) {
+        } elseif ($requestedHour < $limits['hour'] && $diff->h < 1) {
             /*SE A QUANTIDADE DE REQUISICOES POR HORA FOR MENOR QUE O LIMITE E A DIFERENCA DE HORAS FOR MENOR QUE UM
             LIBERA O METODO*/
             $model->setAvailable(1);
             $model->save();
         }
 
-        //CHECANDO REQUISICOES DIA
-        if ($requestedDay >= $day && $diff->d < 1) {
-            $message = 'O limite de ' . $day . ' requisições por dia foi atingido, por favor, tente mais tarde.';
-        } elseif ($diff->d >= 1) {
-            /*SE A DIFERENCA DE DIAS FOR MAIOR OU IGUAL A UM LIBERA O METODO*/
-            $model->setRequestedDay(0);
-            $model->save();
-        }
-
-        //CHECANDO REQUISICOES SEMANA
-        if ($requestedWeek >= $week && $diffInitial->d < 7) {
-            $message = 'O limite de ' . $week . ' requisições por semana foi atingido, por favor, tente mais tarde.';
-        } elseif ($diffInitial->d >= 7) {
-            /*SE A DIFERENCA DE DIAS FOR MAIOR OU IGUAL A SETE LIBERA O METODO*/
-            $model->setInitialHour(null);
-            $model->setRequestedWeek(0);
-            $model->save();
-        }
-
-        if (isset($message)) {
-            return $message;
-        } else {
-            return;
-        }
+        return $limits;
     }
 }

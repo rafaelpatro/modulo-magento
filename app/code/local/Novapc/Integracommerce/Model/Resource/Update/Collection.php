@@ -50,6 +50,10 @@ class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_
 
     public function bulkInsert($productsIds)
     {
+        if (count($productsIds) == 0) {
+            return;
+        }
+
         $rows = array();
         foreach ($productsIds as $productId) {
             $rows[] = array(

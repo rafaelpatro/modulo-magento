@@ -18,25 +18,14 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
     {
         /*CARREGANDO A QUANTIDADE DE REQUISICOES POR TEMPO*/
         $requestedHour = $orderModel->getRequestedHour();
-        $requestedDay = $orderModel->getRequestedDay();
-        $requestedWeek = $orderModel->getRequestedWeek();
-        $requestedInitial = $orderModel->getInitialHour();
 
         /*SOMA A QUANTIDADE ANTERIOR COM A RETORNADA*/
         $requestedHour = $requestedHour + $requested['Total'];
-        $requestedDay = $requestedDay + $requested['Total'];
-        $requestedWeek = $requestedWeek + $requested['Total'];
         $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
         /*GRAVA O HORARIO DA REQUISICAO E AS QUANTIDADES*/
         $orderModel->setStatus($requestTime);
         $orderModel->setRequestedHour($requestedHour);
-        $orderModel->setRequestedDay($requestedDay);
-        $orderModel->setRequestedWeek($requestedWeek);
-
-        if (empty($requestedInitial)) {
-            $orderModel->setInitialHour($requestTime);
-        }
 
         $orderModel->save();
 
@@ -330,6 +319,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $productsIds[] = $skuId;
             $productsData[$skuId]['Price'] =  $product['Price'];
             $productsData[$skuId]['Quantity'] = $product['Quantity'];
+            $productsData[$skuId]['Discount'] = $product['Discount'];
         }
 
         $productCollection = Mage::getModel('catalog/product')->getCollection()
@@ -341,7 +331,13 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $productId = $mageProduct->getId();
             $productsData[$skuId]['product_id'] = $productId;
 
-            $newPrice = str_replace(',', '.', $productsData[$skuId]['Price']);
+            $newPrice = (float) str_replace(',', '.', $productsData[$skuId]['Price']);
+            $discount = (float) str_replace(',', '.', $productsData[$skuId]['Discount']);
+
+            if ($discount > 0) {
+                $newPrice = $newPrice - $discount;
+            }
+
             $rowTotal = $newPrice * $productsData[$skuId]['Quantity'];
             $orderItem = Mage::getModel('sales/order_item')
                 ->setStoreId($storeId)

@@ -33,12 +33,14 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
         $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if ($exportType == 1) {
-            if ($product->getData('integracommerce_sync') == 0) {
+            $isSync = (int) $product->getData('integracommerce_sync');
+            if ($isSync == 0) {
                 return;
             }   
         }     
 
-        if ($product->getData('integracommerce_active') == 0) {
+        $isActive = (int) $product->getData('integracommerce_active');
+        if ($isActive == 0) {
             return;
         }
 
@@ -113,9 +115,10 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $url = 'https://' . $environment . '.integracommerce.com.br/api/Product';
 
-        if ($product->getData('integracommerce_active') == 0) {
+         $isActive = (int) $product->getData('integracommerce_active');
+        if ($isActive == 0) {
             $return = self::callCurl("POST", $url, $jsonBody);
-        } elseif ($product->getData('integracommerce_active') == 1) {
+        } elseif ($isActive == 1) {
             $return = self::callCurl("PUT", $url, $jsonBody);
         }
 
@@ -125,7 +128,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $productType = $product->getTypeId();
-        if ($product->getData('integracommerce_active') == 0 && $productType == 'configurable') {
+        if ($isActive == 0 && $productType == 'configurable') {
             Mage::getSingleton('catalog/product_action')->updateAttributes(
                 array($product->getId()),
                 array('integracommerce_active' => 1),
@@ -302,9 +305,10 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 
         $jsonBody = json_encode($body);
         
-        if ($product->getData('integracommerce_active') == 0) {
+        $isActive = (int) $product->getData('integracommerce_active');
+        if ($isActive == 0) {
             $return = self::callCurl("POST", $url, $jsonBody);
-        } elseif ($product->getData('integracommerce_active') == 1) {
+        } elseif ($isActive == 1) {
             $return = self::callCurl("PUT", $url, $jsonBody);
         }
 
@@ -315,7 +319,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             return array($jsonBody, $return, $product->getId());
         }
 
-        if ($product->getData('integracommerce_active') == 0) {
+        if ($isActive == 0) {
             Mage::getSingleton('catalog/product_action')->updateAttributes(
                 array($product->getId()),
                 array('integracommerce_active' => 1),
@@ -352,7 +356,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $normalPrice = $product->getPrice();
 
         if (empty($normalPrice) || $normalPrice < 1) {
-            if ($configProduct->getId()) {
+            if (!empty($configProduct) && $configProduct->getId()) {
                 $product = $configProduct;
                 $normalPrice = $product->getPrice();
             }
@@ -412,7 +416,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
     public static function updatePrice($product)
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
-        if ($product->getData('integracommerce_active') == 0) {
+        $isActive = (int) $product->getData('integracommerce_active');
+        if ($isActive == 0) {
             return;
         }
 

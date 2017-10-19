@@ -25,12 +25,15 @@ class Novapc_Integracommerce_Model_Observer
             return;
         }
 
-        $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-        $queueProductId = $insertQueue->getProductId();
-        if (!$queueProductId || empty($queueProductId)) {
-            $insertQueue = Mage::getModel('integracommerce/update');
-            $insertQueue->setProductId($product->getId());
-            $insertQueue->save();
+        $productId = $product->getId();
+        if (!empty($productId)) {
+            $insertQueue = Mage::getModel('integracommerce/update')->load($productId, 'product_id');
+            $queueProductId = $insertQueue->getProductId();
+            if (!$queueProductId || empty($queueProductId)) {
+                $insertQueue = Mage::getModel('integracommerce/update');
+                $insertQueue->setProductId($productId);
+                $insertQueue->save();
+            }
         }
     }  
 
@@ -58,7 +61,9 @@ class Novapc_Integracommerce_Model_Observer
             $updateIds[] = $product->getId();
         }
 
-        Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updateIds);
+        if (!empty($updateIds)) {
+            Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updateIds);
+        }
     }
 
     public function updateStatus(Varien_Event_Observer $event)
@@ -107,14 +112,17 @@ class Novapc_Integracommerce_Model_Observer
             }
 
             //VERIFICANDO SE O PRODUTO JA FOI SINCRONIZADO
-            if (empty($activate) && $product->getData('integracommerce_active') == 0) {
+            $isActive = (int) $product->getData('integracommerce_active');
+            if (empty($activate) && $isActive == 0) {
                 continue;
             }
 
             $updatedIds[] = $product->getId();
         }
 
-        $insertQueue = Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updatedIds);
+        if (!empty($updatedIds)) {
+            Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($updatedIds);
+        }
     }
 
     public function productQueue(Varien_Event_Observer $event)
@@ -125,21 +133,24 @@ class Novapc_Integracommerce_Model_Observer
             return;
         }
 
-        $insertQueue = Mage::getModel('integracommerce/update')->load($product->getId(), 'product_id');
-        $queueProductId = $insertQueue->getProductId();
-        if (!$queueProductId || empty($queueProductId)) {
-           $insertQueue = Mage::getModel('integracommerce/update');
-           $insertQueue->setProductId($product->getId());
-           $insertQueue->save();
+        $productId = $product->getId();
+        if (!empty($productId)) {
+            $insertQueue = Mage::getModel('integracommerce/update')->load($productId, 'product_id');
+            $queueProductId = $insertQueue->getProductId();
+            if (!$queueProductId || empty($queueProductId)) {
+               $insertQueue = Mage::getModel('integracommerce/update');
+               $insertQueue->setProductId($productId);
+               $insertQueue->save();
+            }        
         }
     }  
 
     public function getOrders()
     {
         $orderModel = Mage::getModel('integracommerce/queue')->load('Order', 'integra_model');
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, 'get');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, '(GET) api/Order');
 
-        if (isset($message)) {
+        if (isset($limits['message'])) {
             $orderModel->setAvailable(0);
             $orderModel->save();
             return;
@@ -160,38 +171,21 @@ class Novapc_Integracommerce_Model_Observer
     {
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Update', 'integra_model');
 
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, 'put');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, '(PUT) api/Product');
 
-        if (isset($message)) {
+        if (isset($limits['message'])) {
             $productModel->setAvailable(0);
             $productModel->save();
             return;
         } else {
             $alreadyRequested = $productModel->getRequestedHour();
-            $requestedDay = $productModel->getRequestedDay();
-            $requestedWeek = $productModel->getRequestedWeek();
-            $requestedInitial = $productModel->getInitialHour();
-            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested);
+            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested, $limits);
 
-            if ($alreadyRequested == $requestedHour) {
-                $requested = 0;
-                $requestedHour = 0;
-            } else {
-                $requested = $requestedHour - $alreadyRequested;
-            }
-
-            $requestedDay = $requestedDay + $requested;
-            $requestedWeek = $requestedWeek + $requested;
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
+            $requestedHour = $requestedHour + $alreadyRequested;
             $productModel->setRequestedHour($requestedHour);
-            $productModel->setRequestedDay($requestedDay);
-            $productModel->setRequestedWeek($requestedWeek);
-
-            if (empty($requestedInitial)) {
-                $productModel->setInitialHour($requestTime);
-            }
 
             $productModel->save();
 

@@ -30,11 +30,11 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
         /*CARREGA O MODEL DE CONTROLE DE REQUISICOES DE PEDIDOS*/
         $orderModel = Mage::getModel('integracommerce/queue')->load('Order', 'integra_model');
         /*VERIFICA A QUANTIDADE DE REQUISICOES*/
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, 'get');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, '(GET) api/Order');
 
-        if (isset($message)) {
+        if (isset($limits['message'])) {
             /*SE FOR RETORNADO UMA MENSAGEM DE ERRO BLOQUEIA O METODO E RETORNA A MENSAGEM AO USUARIO*/
-            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($message));
+            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($limits['message']));
             $orderModel->setAvailable(0);
             $orderModel->save();
             $this->_redirect('*/*/');
@@ -71,18 +71,15 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
     {
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
         $orderModel = Mage::getModel('integracommerce/queue')->load('Orderid', 'integra_model');
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, 'getid');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($orderModel, '(GET) api/Order/{id}');
 
-        if (isset($message)) {
-            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($message));
+        if (isset($limits['message'])) {
+            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($limits['message']));
             $orderModel->setAvailable(0);
             $orderModel->save();
             $this->_redirect('*/*/');
         } else {
             $requestedHour = $orderModel->getRequestedHour();
-            $requestedDay = $orderModel->getRequestedDay();
-            $requestedWeek = $orderModel->getRequestedWeek();
-            $requestedInitial = $orderModel->getInitialHour();
 
             $ordersIds = (array) $this->getRequest()->getParam('integracommerce_order');
 
@@ -106,7 +103,7 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
                 ->addFieldToFilter('entity_id', array('in' => $nonexistentOrders))
                 ->addFieldToSelect('*');
 
-            $requested = 0;
+            $requestedMin = 0;
             foreach ($integraCollection as $integraOrder) {
                 $integraId = $integraOrder->getIntegraId();
 
@@ -114,30 +111,30 @@ class Novapc_Integracommerce_Adminhtml_OrdersController extends Mage_Adminhtml_C
 
                 $return = Novapc_Integracommerce_Helper_Data::callCurl("GET", $url, null);
 
-                $requested++;
+                $requestedMin++;
+                $requestedHour++;
+                if ($requestedHour == $limits['hour']) {
+                    break;
+                }
+
                 if ($return['OrderStatus'] !== 'APPROVED' && $return['OrderStatus'] !== 'PROCESSING') {
                     continue;
                 }
 
                 Novapc_Integracommerce_Helper_OrderData::processingOrder($return);
 
-                sleep(2);
+                usleep(500000);
+                $time = strtotime('s');
+                $seconds = date("s", $time);
+                if ($requestedMin >= $limits['minute'] && $seconds < 60) {
+                    $waitFor = 60 - $seconds;
+                    time_sleep_until(time()+$waitFor);
+                }
             }
 
-            $requestedHour = $requestedHour + $requested;
-            $requestedDay = $requestedDay + $requested;
-            $requestedWeek = $requestedWeek + $requested;
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
-
             $orderModel->setStatus($requestTime);
             $orderModel->setRequestedHour($requestedHour);
-            $orderModel->setRequestedDay($requestedDay);
-            $orderModel->setRequestedWeek($requestedWeek);
-
-            if (empty($requestedInitial)) {
-                $orderModel->setInitialHour($requestTime);
-            }
-
             $orderModel->save();
 
             Mage::getSingleton('core/session')->addSuccess(Mage::helper('integracommerce')->__(self::SUCCESS_MESSAGE));

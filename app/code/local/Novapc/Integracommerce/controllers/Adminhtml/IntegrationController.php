@@ -29,40 +29,22 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
         $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
         $categoryModel = Mage::getModel('integracommerce/integration')->load('Category', 'integra_model');
 
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($categoryModel, 'post');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($categoryModel, '(POST) api/Category');
 
-        if (isset($message)) {
-            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($message));
+        if (isset($limits['message'])) {
+            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($limits['message']));
             $categoryModel->setAvailable(0);
             $categoryModel->save();
             $this->_redirect('*/*/');
         } else {
             $alreadyRequested = $categoryModel->getRequestedHour();
-            $requestedDay = $categoryModel->getRequestedDay();
-            $requestedWeek = $categoryModel->getRequestedWeek();
-            $requestedInitial = $categoryModel->getInitialHour();
-            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::integrateCategory($alreadyRequested);
+            $requested = Novapc_Integracommerce_Helper_IntegrationData::integrateCategory($alreadyRequested, $limits);
 
-            if ($alreadyRequested == $requestedHour) {
-                $requested = 0;
-                $requestedHour = 0;
-            } else {
-                $requested = $requestedHour - $alreadyRequested;
-            }
-
-            $requestedDay = $requestedDay + $requested;
-            $requestedWeek = $requestedWeek + $requested;
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $categoryModel->setStatus($requestTime);
-            $categoryModel->setRequestedHour($requestedHour);
-            $categoryModel->setRequestedDay($requestedDay);
-            $categoryModel->setRequestedWeek($requestedWeek);
-
-            if (empty($requestedInitial)) {
-                $categoryModel->setInitialHour($requestTime);
-            }
-
+            $requested = $requested + $alreadyRequested;
+            $categoryModel->setRequestedHour($requested);
             $categoryModel->save();
 
             Mage::getSingleton('core/session')->addSuccess(
@@ -77,39 +59,21 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
     {
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Insert', 'integra_model');
 
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, 'post');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, '(POST) api/Product');
 
-        if (isset($message)) {
-            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($message));
+        if (isset($limits['message'])) {
+            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($limits['message']));
             $productModel->setAvailable(0);
             $productModel->save();
             $this->_redirect('*/*/');
         } else {
             $alreadyRequested = $productModel->getRequestedHour();
-            $requestedDay = $productModel->getRequestedDay();
-            $requestedWeek = $productModel->getRequestedWeek();
-            $requestedInitial = $productModel->getInitialHour();
-            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::integrateProduct($alreadyRequested);
+            $requested = Novapc_Integracommerce_Helper_IntegrationData::integrateProduct($alreadyRequested, $limits);
 
-            if ($alreadyRequested == $requestedHour) {
-                $requested = 0;
-                $requestedHour = 0;
-            } else {
-                $requested = $requestedHour - $alreadyRequested;
-            }
-
-            $requestedDay = $requestedDay + $requested;
-            $requestedWeek = $requestedWeek + $requested;
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
-
             $productModel->setStatus($requestTime);
-            $productModel->setRequestedHour($requestedHour);
-            $productModel->setRequestedDay($requestedDay);
-            $productModel->setRequestedWeek($requestedWeek);
-
-            if (empty($requestedInitial)) {
-                $productModel->setInitialHour($requestTime);
-            }
+            $requested = $requested + $alreadyRequested;
+            $productModel->setRequestedHour($requested);
 
             $productModel->save();
 
@@ -134,43 +98,26 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
     {
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Update', 'integra_model');
 
-        $message = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, 'put');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, '(PUT) api/Product');
 
-        if (isset($message)) {
-            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($message));
+        if (isset($limits['message'])) {
+            Mage::getSingleton('core/session')->addError(Mage::helper('integracommerce')->__($limits['message']));
             $productModel->setAvailable(0);
             $productModel->save();
             $this->_redirect('*/*/');
         } else {
             $alreadyRequested = $productModel->getRequestedHour();
-            $requestedDay = $productModel->getRequestedDay();
-            $requestedWeek = $productModel->getRequestedWeek();
-            $requestedInitial = $productModel->getInitialHour();
-            $requestedHour = 100;
             $queueIds = Mage::getModel('integracommerce/update')
                 ->getCollection()
                 ->getProductIds();
-            $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested, $queueIds);
+            $requested = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested,
+                $limits, $queueIds);
 
-            if ($alreadyRequested == $requestedHour) {
-                $requested = 0;
-                $requestedHour = 0;
-            } else {
-                $requested = $requestedHour - $alreadyRequested;
-            }
-
-            $requestedDay = $requestedDay + $requested;
-            $requestedWeek = $requestedWeek + $requested;
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
-            $productModel->setRequestedHour($requestedHour);
-            $productModel->setRequestedDay($requestedDay);
-            $productModel->setRequestedWeek($requestedWeek);
-
-            if (empty($requestedInitial)) {
-                $productModel->setInitialHour($requestTime);
-            }
+            $requested = $requested + $alreadyRequested;
+            $productModel->setRequestedHour($requested);
 
             $productModel->save();
 
@@ -189,6 +136,41 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
             $this->_redirect('*/*/');
         }
+    }
+
+    public function checklimitAction()
+    {
+        $environment = Mage::getStoreConfig('integracommerce/general/environment', Mage::app()->getStore());
+        $url = 'https://' . $environment . '.integracommerce.com.br/api/EndPointLimit';
+
+        $response = Novapc_Integracommerce_Helper_Data::callCurl('GET', $url);
+
+        $httpCode = (int) $response['httpCode'];
+        if ($httpCode == 200) {
+            $requestData = array();
+            unset($response['httpCode']);
+            foreach ($response as $limit) {
+                $requestData[] = array(
+                    'name'   => $limit['Name'],
+                    'minute' => $limit['RequestsByMinute'],
+                    'hour'   => $limit['RequestsByHour']
+                );
+            }
+
+            Mage::getModel('integracommerce/request')
+                ->getCollection()
+                ->bulkInsert($requestData);
+
+            Mage::getSingleton('core/session')->addSuccess(
+                Mage::helper('integracommerce')->__('Limites de Requisições salvos.')
+            );
+        } else {
+            Mage::getSingleton('core/session')->addError(
+                Mage::helper('integracommerce')->__('Erro ao conectar, verifique as credenciais da API.')
+            );
+        }
+
+        $this->_redirectReferer();
     }
 
     public function gridAction()

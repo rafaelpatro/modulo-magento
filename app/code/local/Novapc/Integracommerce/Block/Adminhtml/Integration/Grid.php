@@ -72,15 +72,6 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration_Grid extends Mage_Admin
             )
         );
 
-        $this->addColumn(
-            'initial_hour',
-            array(
-                'header'=> Mage::helper('integracommerce')->__('Primeira Atualização'),
-                'index' => 'initial_hour',
-                'renderer' => 'Novapc_Integracommerce_Block_Adminhtml_Integration_Renderer_Status',
-            )
-        );
-
         return parent::_prepareColumns();
     }
 

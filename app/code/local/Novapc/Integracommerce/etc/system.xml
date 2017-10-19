@@ -39,7 +39,7 @@
                     <comment>
                         <![CDATA[
                             <div>
-                                <h3>v. 2.0.5 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
+                                <h3>v. 2.0.7 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
                                 <img src="http://novapc.com.br/images/logo.png" alt="Smiley face" height="200" width="300">
                                 <br>
                                 <br>
@@ -156,6 +156,15 @@
                             <show_in_store>1</show_in_store>
                             <comment>Selecione o campo para o controle dos Produtos.</comment>
                         </sku_control>
+                        <request_limit>
+                            <label>Limite de Requisições</label>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>100</sort_order>
+                            <frontend_model>integracommerce/adminhtml_form_request</frontend_model>
+                            <comment>Utilize apenas sob orientação de nosso suporte.</comment>
+                        </request_limit>
                     </fields>
                 </general>
                 <attributes translate="label" module="integracommerce">

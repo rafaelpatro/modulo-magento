@@ -17,20 +17,14 @@ $installer->startSetup();
 
 $tablePrefix = Mage::getConfig()->getTablePrefix();
 if (!empty($tablePrefix)) {
-    $queueTable = $tablePrefix . 'npcintegra_product_queue';
-    $attrTable = $tablePrefix . 'npcintegra_sku_attributes';
+    $requestTable = $tablePrefix . 'npcintegra_request_limit';
 } else {
-    $queueTable = 'npcintegra_order_queue';
-    $attrTable = 'npcintegra_sku_attributes';
+    $requestTable = 'npcintegra_request_limit';
 }
 
 try {
-    if ($installer->getConnection()->tableColumnExists($queueTable, 'product_id')) {
-        $installer->run("ALTER TABLE `" . $queueTable . "` ADD UNIQUE INDEX `product_id_UNIQUE` (`product_id` ASC);");
-    }
-
-    if ($installer->getConnection()->tableColumnExists($attrTable, 'category')) {
-        $installer->run("ALTER TABLE `" . $attrTable . "` ADD UNIQUE INDEX `category_UNIQUE` (`category` ASC);");
+    if ($installer->getConnection()->tableColumnExists($requestTable, 'name')) {
+        $installer->run("ALTER TABLE `" . $requestTable . "` ADD UNIQUE INDEX `name_UNIQUE` (`name` ASC);");
     }
 } catch (Exception $e) {
     Mage::log($e->getMessage(), null, 'Integracommerce_InstallError.log');
