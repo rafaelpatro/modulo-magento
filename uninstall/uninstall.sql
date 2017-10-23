@@ -4,6 +4,7 @@ DROP TABLE npcintegra_attributes;
 DROP TABLE npcintegra_order_queue;
 DROP TABLE npcintegra_product_queue;
 DROP TABLE npcintegra_sku_attributes;
+DROP TABLE npcintegra_request_limit;
 
 DELETE FROM `core_config_data` WHERE `path` LIKE 'integracommerce%';
 DELETE FROM `core_resource` WHERE `code` = 'integracommerce_setup';
