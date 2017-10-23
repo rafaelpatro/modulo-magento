@@ -16,7 +16,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
 {
     public static function getStore()
     {
-        $store = Mage::getModel('core/store')->load(1);
+        $storeId = Mage::getStoreConfig('integracommerce/order_status/store', Mage::app()->getStore());
+        $store = Mage::getModel('core/store')->load($storeId);
 
         if ($store->getId()) {
             return $store;
@@ -290,7 +291,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "Weight" => $weight,
             "CodeEan" => ($loadedAttrs['8'] == 'not_selected' ? "" : $product->getData($loadedAttrs['8'])),
             "CodeNcm" => ($loadedAttrs['1'] == 'not_selected' ? "" : $product->getData($loadedAttrs['1'])),
-            "CodeIsbn" => ($loadedAttrs['10'] == 'not_selected' ? "" : $product->getData($loadedAttrs['10'])),
+            "CodeIsbn" => ($loadedAttrs['9'] == 'not_selected' ? "" : $product->getData($loadedAttrs['9'])),
             "CodeNbm" => ($loadedAttrs['1'] == 'not_selected' ? "" : $product->getData($loadedAttrs['1'])),
             "Variation" => "",
             "StockQuantity" => $stockQuantity,

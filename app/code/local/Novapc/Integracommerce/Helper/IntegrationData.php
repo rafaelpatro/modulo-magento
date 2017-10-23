@@ -633,19 +633,20 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
         /*CARREGANDO O HORARIO DA ULTIMA REQUISICAO*/
         $timeZone = Mage::getStoreConfig('general/locale/timezone');
-        $status = new DateTime($model->getStatus(), new DateTimeZone($timeZone));
+        $lastRequest = new DateTime($model->getStatus(), new DateTimeZone($timeZone));
         $now = Novapc_Integracommerce_Helper_Data::currentDate();
-        $diff = date_diff($now, $status);
+        $lastRequestHour = $lastRequest->format('H');
+        $currentHour = $now->format('H');
 
         //CHECANDO REQUISICOES HORA
-        if ($requestedHour >= $limits['hour'] && $diff->h < 1) {
+        if ($requestedHour >= $limits['hour'] && $lastRequestHour == $currentHour) {
             $limits['message'] = 'O limite de requisições por hora foi atingido, por favor, tente mais tarde.';
-        } elseif ($diff->h >= 1) {
+        } elseif ($lastRequestHour !== $currentHour) {
             /*SE A DIFERENCA DE HORAS FOR MAIOR OU IGUAL A UM LIBERA O METODO*/
             $model->setRequestedHour(0);
             $model->setAvailable(1);
             $model->save();
-        } elseif ($requestedHour < $limits['hour'] && $diff->h < 1) {
+        } elseif ($requestedHour < $limits['hour'] && $lastRequestHour == $currentHour) {
             /*SE A QUANTIDADE DE REQUISICOES POR HORA FOR MENOR QUE O LIMITE E A DIFERENCA DE HORAS FOR MENOR QUE UM
             LIBERA O METODO*/
             $model->setAvailable(1);
