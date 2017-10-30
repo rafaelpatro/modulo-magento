@@ -192,6 +192,8 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
             }
 
+            usleep(500000);
+
             if ($prodType == 'configurable') {
                 $requested++;
                 $requestedMin++;
@@ -277,6 +279,8 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             } else {
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 1, 'product');
             }
+
+            usleep(500000);
 
             if ($productControl == 'sku') {
                 $idProduct = $configurableProduct->getData('sku');
@@ -585,6 +589,8 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             } else {
                 Novapc_Integracommerce_Helper_Data::checkError(null, null, $productId, 0, 'price');
             }
+
+            usleep(500000);
 
             list($jsonBody, $response, $errorId) = Novapc_Integracommerce_Helper_Data::updateStock($product);
             //VERIFICANDO ERROS DE ESTOQUE

@@ -35,7 +35,7 @@ class Novapc_Integracommerce_Model_Resource_Request_Collection extends Mage_Core
         $write->insertOnDuplicate(
             $this->getMainTable(),
             $rows,
-            array('name')
+            array('name', 'minute', 'hour')
         );
 
         $write->commit();
