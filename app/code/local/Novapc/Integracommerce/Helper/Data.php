@@ -282,8 +282,6 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $description = $product->getData('description');
         if (empty($description) && !empty($cfgProd)) {
             $description = $cfgProd->getData('description');
-        } else {
-            $description = "";
         }
 
         $body = array(
