@@ -108,19 +108,19 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
         if ($exportType == 1) {
             $collection = Mage::getModel('catalog/product')->getCollection()
-                            ->addFieldToFilter('integracommerce_sync', 1)
-                            ->addFieldToFilter('integracommerce_active', 0)
-                            ->addAttributeToSelect('*')
-                            ->setPageSize($collSize)
-                            ->setCurPage(1);
+                ->addFieldToFilter('integracommerce_sync', array('eq' => 1))
+                ->addFieldToFilter('integracommerce_active', array('neq' => 1))
+                ->addAttributeToSelect('*')
+                ->setPageSize($collSize)
+                ->setCurPage(1);
 
             $return = self::productSelection($collection, $requested, $limits);
         } elseif ($exportType == 2) {
             $collection = Mage::getModel('catalog/product')->getCollection()
-                            ->addFieldToFilter('integracommerce_active', 0)
-                            ->addAttributeToSelect('*')
-                            ->setPageSize($collSize)
-                            ->setCurPage(1);
+                ->addFieldToFilter('integracommerce_active', array('neq' => 1))
+                ->addAttributeToSelect('*')
+                ->setPageSize($collSize)
+                ->setCurPage(1);
 
             $return = self::productSelection($collection, $requested, $limits);
         }
@@ -542,17 +542,12 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
     }    
 
-    public static function forceUpdate($alreadyRequested, $limits, $queueCollection = null)
+    public static function forceUpdate($alreadyRequested, $limits)
     {
-        if (empty($queueCollection)) {
-            $queueCollection = Mage::getModel('integracommerce/update')
-                ->getCollection()
-                ->addFieldToFilter('product_error', array('null' => true))
-                ->addFieldToFilter('sku_error', array('null' => true))
-                ->addFieldToFilter('price_error', array('null' => true))
-                ->addFieldToFilter('stock_error', array('null' => true))
-                ->getProductIds();
-        }
+        $queueCollection = Mage::getModel('integracommerce/update')
+            ->getCollection()
+            ->addFieldToFilter('requested_times', array('lt' => 5))
+            ->getProductIds();
 
         $collSize = (int) $limits['minute'];
         $productCollection = Mage::getModel('catalog/product')->getCollection()
@@ -648,7 +643,6 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         if ($requestedHour >= $limits['hour'] && $lastRequestHour == $currentHour) {
             $limits['message'] = 'O limite de requisições por hora foi atingido, por favor, tente mais tarde.';
         } elseif ($lastRequestHour !== $currentHour) {
-            /*SE A DIFERENCA DE HORAS FOR MAIOR OU IGUAL A UM LIBERA O METODO*/
             $model->setRequestedHour(0);
             $model->setAvailable(1);
             $model->save();

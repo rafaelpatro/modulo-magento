@@ -117,6 +117,14 @@ class Novapc_Integracommerce_Model_Observer
                 continue;
             }
 
+            $prodType = $product->getTypeId();
+            if ($prodType == 'configurable') {
+                $simpleIds = Mage::getModel('catalog/product_type_configurable')
+                    ->getUsedProductIds($product);
+
+                Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($simpleIds);
+            }
+
             $updatedIds[] = $product->getId();
         }
 
@@ -131,6 +139,14 @@ class Novapc_Integracommerce_Model_Observer
         $isActive = (int) $product->getData('integracommerce_active');
         if ($isActive !== 1) {
             return;
+        }
+
+        $prodType = $product->getTypeId();
+        if ($prodType == 'configurable') {
+            $simpleIds = Mage::getModel('catalog/product_type_configurable')
+                ->getUsedProductIds($product);
+
+            Mage::getModel('integracommerce/update')->getCollection()->bulkInsert($simpleIds);
         }
 
         $productId = $product->getId();
@@ -184,7 +200,6 @@ class Novapc_Integracommerce_Model_Observer
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
-            $requestedHour = $requestedHour + $alreadyRequested;
             $productModel->setRequestedHour($requestedHour);
 
             $productModel->save();

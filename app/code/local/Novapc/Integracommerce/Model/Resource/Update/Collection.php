@@ -57,15 +57,16 @@ class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_
         $rows = array();
         foreach ($productsIds as $productId) {
             $rows[] = array(
-                'product_id' => $productId,
-                'product_body' => null,
-                'product_error' => null,
-                'sku_body' => null,
-                'sku_error' => null,
-                'price_body' => null,
-                'price_error' => null,
-                'stock_body' => null,
-                'stock_error' => null
+                'product_id'      => $productId,
+                'product_body'    => null,
+                'product_error'   => null,
+                'sku_body'        => null,
+                'sku_error'       => null,
+                'price_body'      => null,
+                'price_error'     => null,
+                'stock_body'      => null,
+                'stock_error'     => null,
+                'requested_times' => 0
             );
         }
 
@@ -79,6 +80,16 @@ class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_
     }
 
     public function deleteItens($productsIds)
+    {
+        $write = Mage::getSingleton('core/resource')->getConnection('core_write');
+
+        $write->delete(
+            $this->getMainTable(),
+            array('entity_id IN (?)' => $productsIds)
+        );
+    }
+
+    public function resetItens($productsIds)
     {
         $write = Mage::getSingleton('core/resource')->getConnection('core_write');
 

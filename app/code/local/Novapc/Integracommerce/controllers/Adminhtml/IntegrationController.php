@@ -43,7 +43,6 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $categoryModel->setStatus($requestTime);
-            $requested = $requested + $alreadyRequested;
             $categoryModel->setRequestedHour($requested);
             $categoryModel->save();
 
@@ -72,7 +71,6 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
 
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
             $productModel->setStatus($requestTime);
-            $requested = $requested + $alreadyRequested;
             $productModel->setRequestedHour($requested);
 
             $productModel->save();
@@ -107,16 +105,11 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $this->_redirect('*/*/');
         } else {
             $alreadyRequested = $productModel->getRequestedHour();
-            $queueIds = Mage::getModel('integracommerce/update')
-                ->getCollection()
-                ->getProductIds();
-            $requested = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested,
-                $limits, $queueIds);
+            $requested = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested, $limits);
 
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
 
             $productModel->setStatus($requestTime);
-            $requested = $requested + $alreadyRequested;
             $productModel->setRequestedHour($requested);
 
             $productModel->save();

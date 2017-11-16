@@ -16,7 +16,7 @@
 <config>
 	<modules>
 		<Novapc_Integracommerce>
-			<version>2.0.7</version>
+			<version>2.0.8</version>
 		</Novapc_Integracommerce>
 	</modules>
     <frontend>
@@ -213,14 +213,62 @@
     </adminhtml>
     <default>
         <payment>
-            <integracommerce_payment>
+            <integracommerce_magazine>
                 <active>0</active>
-                <model>integracommerce/payment</model>
+                <model>integracommerce/magazine</model>
                 <order_status>New</order_status>
-                <title>Integracommerce</title>
+                <title>Magazine Luiza</title>
                 <allowspecific>0</allowspecific>
                 <payment_action>sale</payment_action>
-            </integracommerce_payment>
+            </integracommerce_magazine>
+            <integracommerce_mobly>
+                <active>0</active>
+                <model>integracommerce/mobly</model>
+                <order_status>New</order_status>
+                <title>Mobly</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_mobly>
+            <integracommerce_dafiti>
+                <active>0</active>
+                <model>integracommerce/dafiti</model>
+                <order_status>New</order_status>
+                <title>Dafiti</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_dafiti>
+            <integracommerce_carrefour>
+                <active>0</active>
+                <model>integracommerce/carrefour</model>
+                <order_status>New</order_status>
+                <title>Carrefour</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_carrefour>
+            <integracommerce_walmart>
+                <active>0</active>
+                <model>integracommerce/walmart</model>
+                <order_status>New</order_status>
+                <title>Walmart</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_walmart>
+            <integracommerce_cnova>
+                <active>0</active>
+                <model>integracommerce/cnova</model>
+                <order_status>New</order_status>
+                <title>Cnova</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_cnova>
+            <integracommerce_b2w>
+                <active>0</active>
+                <model>integracommerce/b2w</model>
+                <order_status>New</order_status>
+                <title>B2W</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_b2w>
         </payment>
     </default>
     <crontab>

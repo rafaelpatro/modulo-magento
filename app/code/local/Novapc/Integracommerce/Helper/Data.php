@@ -110,7 +110,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "Active" => true,
             "Categories" => $_cats,
             "Attributes" => $_attrs
-        );  
+        );
 
         $jsonBody = json_encode($body);
 
@@ -158,7 +158,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         if ($brand !== 'not_selected') {
-            $brand = self::checkNbmNumber($product, $brand);
+            $brand = self::checkBrand($product, $brand);
         } else {
             $brand = "";
         }
@@ -192,7 +192,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $internacional = strpos($attrValue, 'Internacional');
         $nacional = strpos($attrValue, 'Nacional');
 
-        if ($strposEstrangeira !== false || $strposInternacional !== false) {
+        if ($internacional !== false || $estrangeiro !== false) {
             $nbmOrigin = "1";
         } elseif ($nacional !== false) {
             $nbmOrigin = "0";
@@ -279,12 +279,19 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $skuStatus = true;
         }
 
+        $description = $product->getData('description');
+        if (empty($description) && !empty($cfgProd)) {
+            $description = $cfgProd->getData('description');
+        } else {
+            $description = "";
+        }
+
         $body = array(
             "idSku" => $idSku,
             "IdSkuErp" => $product->getData('sku'),
             "idProduct" => $productId,
             "Name" => $product->getName(),
-            "Description" => $product->getData('description'),
+            "Description" => $description,
             "Height" => $heightValue,
             "Width" => $widthValue,
             "Length" => $lengthValue,
@@ -356,7 +363,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
     {
         $normalPrice = $product->getPrice();
 
-        if (empty($normalPrice) || $normalPrice < 1) {
+        if (empty($normalPrice) || $normalPrice <= 0) {
             if (!empty($configProduct) && $configProduct->getId()) {
                 $product = $configProduct;
                 $normalPrice = $product->getPrice();
@@ -364,7 +371,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $specialPrice = $product->getSpecialPrice();
-        if (empty($specialPrice)) {
+        if (empty($specialPrice) || $specialPrice <= 0) {
             $specialPrice = $normalPrice;
         } else {
             $specialFrom = $product->getSpecialFromDate();
@@ -496,8 +503,11 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $errorQueue->setProductId($productId);
         }
 
+        $requestedTimes = $errorQueue->getRequestedTimes();
+        $requestedTimes++;
         $errorQueue->setData($type . '_body', $body);
         $errorQueue->setData($type . '_error', $response);
+        $errorQueue->setRequestedTimes($requestedTimes);
         $errorQueue->save();
     }
 

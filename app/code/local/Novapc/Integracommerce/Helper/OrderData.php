@@ -299,10 +299,35 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setShippingAmount($shippingprice)
             ->setBaseShippingAmount($shippingprice);
 
+        $marketplaceName = $order['MarketplaceName'];
+        switch ($marketplaceName) {
+            case "Magazine Luiza":
+                $paymentMethod = 'integracommerce_magazine';
+                break;
+            case "Mobly":
+                $paymentMethod = 'integracommerce_mobly';
+                break;
+            case "B2W":
+                $paymentMethod = 'integracommerce_b2w';
+                break;
+            case "Walmart":
+                $paymentMethod = 'integracommerce_walmart';
+                break;
+            case "Dafiti":
+                $paymentMethod = 'integracommerce_dafiti';
+                break;
+            case "Carrefour":
+                $paymentMethod = 'integracommerce_carrefour';
+                break;
+            case "Cnova":
+                $paymentMethod = 'integracommerce_cnova';
+                break;
+        }
+
         $orderPayment = Mage::getModel('sales/order_payment')
             ->setStoreId($storeId)
             ->setCustomerPaymentId(0)
-            ->setMethod('integracommerce_payment')
+            ->setMethod($paymentMethod)
             ->setPo_number(' – ')
             ->setIntegracommerceName($order['Payments'][0]['Name'])
             ->setIntegracommerceInstallments($order['Payments'][0]['Installments']);
@@ -316,10 +341,15 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $productsData = array();
         foreach ($order['Products'] as $key => $product) {
             $skuId = $product['IdSku'];
-            $productsIds[] = $skuId;
-            $productsData[$skuId]['Price'] =  $product['Price'];
-            $productsData[$skuId]['Quantity'] = $product['Quantity'];
-            $productsData[$skuId]['Discount'] = $product['Discount'];
+            if (array_key_exists($skuId, $productsData)) {
+                $newQty = $productsData[$skuId]['Quantity'] + $product['Quantity'];
+                $productsData[$skuId]['Quantity'] = $newQty;
+            } else {
+                $productsIds[] = $skuId;
+                $productsData[$skuId]['Price'] =  $product['Price'];
+                $productsData[$skuId]['Quantity'] = $product['Quantity'];
+                $productsData[$skuId]['Discount'] = $product['Discount'];
+            }
         }
 
         $productCollection = Mage::getModel('catalog/product')->getCollection()
