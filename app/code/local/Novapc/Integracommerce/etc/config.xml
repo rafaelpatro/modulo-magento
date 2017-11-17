@@ -213,6 +213,14 @@
     </adminhtml>
     <default>
         <payment>
+            <integracommerce_payment>
+                <active>0</active>
+                <model>integracommerce/payment</model>
+                <order_status>New</order_status>
+                <title>Integracommerce</title>
+                <allowspecific>0</allowspecific>
+                <payment_action>sale</payment_action>
+            </integracommerce_payment>
             <integracommerce_magazine>
                 <active>0</active>
                 <model>integracommerce/magazine</model>
