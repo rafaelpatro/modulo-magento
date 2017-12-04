@@ -85,7 +85,7 @@ class Novapc_Integracommerce_Model_Resource_Update_Collection extends Mage_Core_
 
         $write->delete(
             $this->getMainTable(),
-            array('entity_id IN (?)' => $productsIds)
+            array('product_id IN (?)' => $productsIds)
         );
     }
 

@@ -77,9 +77,23 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
     {
         $itensIds = (array) $this->getRequest()->getParam('integracommerce_report');
 
+        $productIds = Mage::getModel('integracommerce/update')
+            ->getCollection()
+            ->addFieldToFilter('entity_id', array('in' => $itensIds))
+            ->addFieldToFilter(
+                array('product_error', 'sku_error', 'price_error', 'stock_error'),
+                array(
+                    array('notnull' => true),
+                    array('notnull' => true),
+                    array('notnull' => true),
+                    array('notnull' => true)
+                )
+            )
+            ->getProductIds();
+
         $collection = Mage::getModel('integracommerce/update')
             ->getCollection()
-            ->deleteItens($itensIds);
+            ->deleteItens($productIds);
 
         $this->_redirect('*/*/');
     }
@@ -96,6 +110,20 @@ class Novapc_Integracommerce_Adminhtml_ReportController extends Mage_Adminhtml_C
             $item->setRequestedTimes(0);
             $item->save();
         }
+
+        $this->_redirect('*/*/');
+    }
+
+    protected function insertProductsAction()
+    {
+        $productIds = Mage::getModel('catalog/product')
+            ->getCollection()
+            ->addFieldToFilter('integracommerce_active', array('eq' => 1))
+            ->getAllIds();
+
+        $collection = Mage::getModel('integracommerce/update')
+            ->getCollection()
+            ->bulkInsert($productIds);
 
         $this->_redirect('*/*/');
     }

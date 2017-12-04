@@ -4,6 +4,17 @@
     <tr>
         <td style="width:50%;"><h3 class="icon-head head-report">Relatório de Atualização</h3></td>
         <td class="a-right">
+            <?php
+            $url = $this->getUrl('integracommerce/adminhtml_report/insertProducts');
+            $this->_addButton(
+                'add_new',
+                array(
+                    'label'   => $this->escapeHtml('Inserir Produtos na Fila'),
+                    'onclick' => 'setLocation(\'' . $url . '\')',
+                    'class'   => 'add'
+                )
+            );
+            ?>
             <?php echo $this->getButtonsHtml() ?>
         </td>
     </tr>
