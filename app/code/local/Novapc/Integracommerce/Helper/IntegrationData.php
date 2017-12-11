@@ -164,7 +164,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
             if ($prodType == 'simple' && $configProd == 1) {
                 list($configRequested, $requestedMin) = self::configurableProduct(
                     $product, $environment, $loadedAttrs, $requested, $initialAttributes,
-                        $attributes, $limits, $requestedMin);
+                $attributes, $limits, $requestedMin);
 
                 if ($configRequested > 0) {
                     $requested = $requested + $configRequested;

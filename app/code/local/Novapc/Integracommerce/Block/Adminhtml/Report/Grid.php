@@ -15,7 +15,7 @@
 class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     const CONFIRM_MESSAGE = 'Esta ação removerá os itens da fila, inclusive caso ainda não tenha sido atualizado!';
-    const RESET_MESSAGE = 'Esta ação indicará que o erro foi corrigido e o produto voltará a tentar ser atualizado!';
+    const RESET_MESSAGE = 'Esta ação indicará que o erro foi corrigido, o produto voltará a tentar ser atualizado!';
 
     public function __construct()
     {

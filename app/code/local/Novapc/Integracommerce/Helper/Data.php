@@ -286,6 +286,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $description = $cfgProd->getData('description');
         }
 
+        $mainImage = (string) array_shift($pictures);
+
         $body = array(
             "idSku" => $idSku,
             "IdSkuErp" => $product->getData('sku'),
@@ -306,7 +308,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "Price" => array(
                 "ListPrice" => ($normalPrice < $specialPrice ? $specialPrice : $normalPrice),
                 "SalePrice" => $specialPrice
-            ),  
+            ),
+            "MainImageUrl" => $mainImage,
             "UrlImages" => $pictures,  
             "Attributes" => $_attrs
         );
@@ -453,8 +456,9 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
                 ->addAttributeToSelect('*');
 
             foreach ($configCollection as $configurableProduct) {
-                list($normalPrice, $specialPrice) = self::checkPrice($normalPriceAttr, $specialPriceAttr,
-                    $product, $configurableProduct);
+                list($normalPrice, $specialPrice) = self::checkPrice(
+                    $normalPriceAttr, $specialPriceAttr, $product, $configurableProduct
+                );
             }
         } else {
             list($normalPrice, $specialPrice) = self::checkPrice($normalPriceAttr, $specialPriceAttr, $product);

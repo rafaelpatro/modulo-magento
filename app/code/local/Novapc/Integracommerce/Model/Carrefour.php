@@ -11,6 +11,7 @@
  * @version   GIT: 1.0
  * @link      https://github.com/integracommerce/modulo-magento
  */
+
 class Novapc_Integracommerce_Model_Carrefour extends Mage_Payment_Model_Method_Abstract
 {
     protected $_code = 'integracommerce_carrefour';
