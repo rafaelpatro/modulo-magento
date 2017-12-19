@@ -31,7 +31,7 @@
             <show_in_store>1</show_in_store>
             <groups>
                 <novapc_information_group translate="label" module="integracommerce">
-                    <label>Important informations</label>
+                    <label>Informações Importantes</label>
                     <sort_order>0</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
@@ -39,7 +39,7 @@
                     <comment>
                         <![CDATA[
                             <div>
-                                <h3>v. 2.0.8 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
+                                <h3>v. 2.1.0 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
                                 <img src="http://novapc.com.br/images/logo.png" alt="Smiley face" height="200" width="300">
                                 <br>
                                 <br>

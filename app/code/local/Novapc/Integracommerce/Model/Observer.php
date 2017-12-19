@@ -181,12 +181,56 @@ class Novapc_Integracommerce_Model_Observer
 
             return;
         }
-    }      
+    }
+
+    public function categoryExport()
+    {
+        $categoryModel = Mage::getModel('integracommerce/integration')->load('Category', 'integra_model');
+
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($categoryModel, '(POST) api/Category');
+
+        if (isset($limits['message'])) {
+            $categoryModel->setAvailable(0);
+            $categoryModel->save();
+            return $limits['message'];
+        } else {
+            $alreadyRequested = $categoryModel->getRequestedHour();
+            $requested = Novapc_Integracommerce_Helper_IntegrationData::integrateCategory($alreadyRequested, $limits);
+
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
+
+            $categoryModel->setStatus($requestTime);
+            $categoryModel->setRequestedHour($requested);
+            $categoryModel->save();
+        }
+    }
+
+    public function productExport()
+    {
+        $productModel = Mage::getModel('integracommerce/integration')->load('Product Insert', 'integra_model');
+        $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, '(POST) api/Product');
+
+        if (isset($limits['message'])) {
+            $productModel->setAvailable(0);
+            $productModel->save();
+            return $limits['message'];
+        } else {
+            $alreadyRequested = $productModel->getRequestedHour();
+            $requested = Novapc_Integracommerce_Helper_IntegrationData::integrateProduct($alreadyRequested, $limits);
+
+            $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
+            $productModel->setStatus($requestTime);
+            $productModel->setRequestedHour($requested);
+
+            $productModel->save();
+
+            return;
+        }
+    }
 
     public function productUpdate()
     {
         $productModel = Mage::getModel('integracommerce/integration')->load('Product Update', 'integra_model');
-
         $limits = Novapc_Integracommerce_Helper_IntegrationData::checkRequest($productModel, '(PUT) api/Product');
 
         if (isset($limits['message'])) {
@@ -198,7 +242,6 @@ class Novapc_Integracommerce_Model_Observer
             $requestedHour = Novapc_Integracommerce_Helper_IntegrationData::forceUpdate($alreadyRequested, $limits);
 
             $requestTime = Novapc_Integracommerce_Helper_Data::currentDate(null, 'string');
-
             $productModel->setStatus($requestTime);
             $productModel->setRequestedHour($requestedHour);
 

@@ -23,6 +23,7 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         $categories = Mage::getModel('catalog/category')
                         ->getCollection()
                         ->addFieldToFilter('integracommerce_active', array('neq' => 1))
+                        ->addFieldToFilter('level', array('gt' => 1))
                         ->setOrder('level', 'ASC')
                         ->addAttributeToSelect('*')
                         ->setPageSize($collSize)
@@ -32,10 +33,6 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
         $requestedMin = 0;
         foreach ($categories as $category) {
             $catLevel = $category->getData('level');
-
-            if ($catLevel <= 1) {
-                continue;
-            }
 
             if ($catLevel == 2) {
                 $parentId = "";
@@ -104,26 +101,44 @@ class Novapc_Integracommerce_Helper_IntegrationData extends Mage_Core_Helper_Abs
 
     public static function integrateProduct($requested, $limits)
     {
+        $skipProducts = Mage::getModel('integracommerce/update')
+            ->getCollection()
+            ->addFieldToFilter('requested_times', array('gteq' => 5))
+            ->getProductIds();
+
         $collSize = (int) $limits['minute'];
         $exportType = Mage::getStoreConfig('integracommerce/general/export_type', Mage::app()->getStore());
+        $collection = Mage::getModel('catalog/product')->getCollection()
+            ->addFieldToFilter('integracommerce_active', array('neq' => 1))
+            ->addAttributeToSelect('*');
+
         if ($exportType == 1) {
-            $collection = Mage::getModel('catalog/product')->getCollection()
-                ->addFieldToFilter('integracommerce_sync', array('eq' => 1))
-                ->addFieldToFilter('integracommerce_active', array('neq' => 1))
-                ->addAttributeToSelect('*')
-                ->setPageSize($collSize)
-                ->setCurPage(1);
-
-            $return = self::productSelection($collection, $requested, $limits);
-        } elseif ($exportType == 2) {
-            $collection = Mage::getModel('catalog/product')->getCollection()
-                ->addFieldToFilter('integracommerce_active', array('neq' => 1))
-                ->addAttributeToSelect('*')
-                ->setPageSize($collSize)
-                ->setCurPage(1);
-
-            $return = self::productSelection($collection, $requested, $limits);
+            $collection->addFieldToFilter('integracommerce_sync', array('eq' => 1));
         }
+
+        if (!empty($skipProducts)) {
+            $notificationModel = Mage::getModel('adminnotification/inbox');
+            $latestNotice = $notificationModel->loadLatestNotice();
+            $noticeTitle = (string) $latestNotice->getTitle();
+            if ($noticeTitle !== 'Integracommerce - Erro de Sincronização: O Relatório contém itens Bloqueados!') {
+                $notificationModel->addCritical(
+                    "Integracommerce - Erro de Sincronização: O Relatório contém itens Bloqueados!",
+                    "Quando um item encontra-se bloqueado o mesmo não será atualizado até que o erro apresentado seja
+                corrigido e o item marcado como corrigido. Para realizar este procedimento, navegue até
+                Integracommerce -> Relatorio, clique sobre um item bloqueado, verifique o erro no campo Erro,
+                realize a correção (caso tenha dúvidas sobre o erro, por favor contate nosso suporte), volte ao
+                relatório, marque o item corrigido, vá em Ações -> Erros Corrigidos -> Enviar. Após este processo
+                o módulo tentará atualizar este item novamente."
+                );
+            }
+
+            $collection->addFieldToFilter('entity_id', array('nin' => $skipProducts));
+        }
+
+        $collection->setPageSize($collSize)
+            ->setCurPage(1);
+
+        $return = self::productSelection($collection, $requested, $limits);
 
         return $return;
     }
