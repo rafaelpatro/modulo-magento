@@ -322,6 +322,9 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             case "Cnova":
                 $paymentMethod = 'integracommerce_cnova';
                 break;
+            case "CNova":
+                $paymentMethod = 'integracommerce_cnova';
+                break;
         }
 
         $orderPayment = Mage::getModel('sales/order_payment')
@@ -395,7 +398,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $mageOrder->setSubtotal($subTotal)
             ->setBaseSubtotal($subTotal)
             ->setGrandTotal($subTotal + $shippingprice)
-            ->setBaseGrandTotal($subTotal);
+            ->setBaseGrandTotal($subTotal + $shippingprice);
 
         $mageOrder->setData('integracommerce_id', $order['IdOrder']);
 
@@ -410,6 +413,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $estimatedDate,
             false
         );
+
         $comment->setIsCustomerNotified(false);
 
         try {
