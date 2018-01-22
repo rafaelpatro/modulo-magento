@@ -71,6 +71,7 @@ class Novapc_Integracommerce_Model_Observer
         $comment = $event->getDataObject();
         $orderId = $comment->getParentId();
         $createdAt = $comment->getCreatedAt();
+
         $now = new DateTime('NOW');
         $formatedNow = $now->format('Y-m-d H:i:s');
         if ($formatedNow !== $createdAt) {

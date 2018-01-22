@@ -77,10 +77,12 @@ class Novapc_Integracommerce_Adminhtml_IntegrationController extends Mage_Adminh
             $requestData = array();
             unset($response['httpCode']);
             foreach ($response as $limit) {
+                $minute = (int) $limit['RequestsByMinute'];
+                $hour = $minute * 60;
                 $requestData[] = array(
                     'name'   => $limit['Name'],
-                    'minute' => $limit['RequestsByMinute'],
-                    'hour'   => $limit['RequestsByHour']
+                    'minute' => $minute,
+                    'hour'   => $hour
                 );
             }
 

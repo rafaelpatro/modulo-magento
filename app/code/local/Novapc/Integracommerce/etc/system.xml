@@ -39,7 +39,7 @@
                     <comment>
                         <![CDATA[
                             <div>
-                                <h3>v. 2.1.1 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
+                                <h3>v. 2.1.2 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
                                 <img src="http://novapc.com.br/images/logo.png" alt="Smiley face" height="200" width="300">
                                 <br>
                                 <br>
@@ -393,6 +393,21 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </nfe_model>
+                        <invoice_date translate="label" module="integracommerce">
+                            <label>Data do Comentário como Data de Emissão da Fatura</label>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <frontend_type>select</frontend_type>
+                            <sort_order>60</sort_order>
+                            <comment>IMPORTANTE: Se a opção SIM for marcada a data de inserção do comentário
+                            será usada como Data de Emissão da Fatura, independente de ter sido informada ou
+                            não no momento do envio.</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <nfe_model>new</nfe_model>
+                            </depends>
+                        </invoice_date>
                     </fields>
                 </order_status> 
             </groups>
