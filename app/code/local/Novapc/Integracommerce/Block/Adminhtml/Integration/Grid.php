@@ -81,26 +81,10 @@ class Novapc_Integracommerce_Block_Adminhtml_Integration_Grid extends Mage_Admin
         $this->getMassactionBlock()->setFormFieldName('integracommerce_integration');
 
         $this->getMassactionBlock()->addItem(
-            'category',
+            'execute',
             array(
-            'label'    => Mage::helper('integracommerce')->__('Exportar Categorias'),
-            'url'      => $this->getUrl('*/*/massCategory')
-            )
-        );
-
-        $this->getMassactionBlock()->addItem(
-            'insert',
-            array(
-            'label'    => Mage::helper('integracommerce')->__('Exportar Produtos'),
-            'url'      => $this->getUrl('*/*/massInsert')
-            )
-        );
-
-        $this->getMassactionBlock()->addItem(
-            'update',
-            array(
-                'label'    => Mage::helper('integracommerce')->__('Atualizar Produtos'),
-                'url'      => $this->getUrl('*/*/massUpdate')
+                'label'    => Mage::helper('integracommerce')->__('Executar'),
+                'url'      => $this->getUrl('*/*/massExecute')
             )
         );
 

@@ -110,7 +110,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "Active" => true,
             "Categories" => $_cats,
             "Attributes" => $_attrs
-        );  
+        );
 
         $jsonBody = json_encode($body);
 
@@ -158,7 +158,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         if ($brand !== 'not_selected') {
-            $brand = self::checkNbmNumber($product, $brand);
+            $brand = self::checkBrand($product, $brand);
         } else {
             $brand = "";
         }
@@ -192,7 +192,7 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $internacional = strpos($attrValue, 'Internacional');
         $nacional = strpos($attrValue, 'Nacional');
 
-        if ($strposEstrangeira !== false || $strposInternacional !== false) {
+        if ($internacional !== false || $estrangeiro !== false) {
             $nbmOrigin = "1";
         } elseif ($nacional !== false) {
             $nbmOrigin = "0";
@@ -257,7 +257,9 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         $url = 'https://' . $environment . '.integracommerce.com.br/api/Sku';
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
         list($heightValue, $widthValue, $lengthValue) = self::checkMeasure($product, $loadedAttrs);
-        list($normalPrice, $specialPrice) = self::checkPrice($product, $cfgProd);
+        $normalPriceAttr = Mage::getStoreConfig('integracommerce/attributes/price', Mage::app()->getStore());
+        $specialPriceAttr = Mage::getStoreConfig('integracommerce/attributes/special_price', Mage::app()->getStore());
+        list($normalPrice, $specialPrice) = self::checkPrice($normalPriceAttr, $specialPriceAttr, $product, $cfgProd);
         $weight = self::checkWeight($product, $loadedAttrs);
 
         $stockItem = Mage::getModel('cataloginventory/stock_item')
@@ -279,12 +281,19 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $skuStatus = true;
         }
 
+        $description = $product->getData('description');
+        if (empty($description) && !empty($cfgProd)) {
+            $description = $cfgProd->getData('description');
+        }
+
+        $mainImage = (string) array_shift($pictures);
+
         $body = array(
             "idSku" => $idSku,
             "IdSkuErp" => $product->getData('sku'),
             "idProduct" => $productId,
             "Name" => $product->getName(),
-            "Description" => $product->getData('description'),
+            "Description" => $description,
             "Height" => $heightValue,
             "Width" => $widthValue,
             "Length" => $lengthValue,
@@ -299,13 +308,14 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             "Price" => array(
                 "ListPrice" => ($normalPrice < $specialPrice ? $specialPrice : $normalPrice),
                 "SalePrice" => $specialPrice
-            ),  
+            ),
+            "MainImageUrl" => $mainImage,
             "UrlImages" => $pictures,  
             "Attributes" => $_attrs
         );
 
         $jsonBody = json_encode($body);
-        
+
         $isActive = (int) $product->getData('integracommerce_active');
         if ($isActive == 0) {
             $return = self::callCurl("POST", $url, $jsonBody);
@@ -352,30 +362,38 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         return $weight;
     }
 
-    public static function checkPrice($product, $configProduct = null)
+    public static function checkPrice($normalPriceAttr, $specialPriceAttr, $product, $configProduct = null)
     {
-        $normalPrice = $product->getPrice();
-
-        if (empty($normalPrice) || $normalPrice < 1) {
-            if (!empty($configProduct) && $configProduct->getId()) {
+        $normalPrice = $product->getData($normalPriceAttr);
+        if (empty($normalPrice) || $normalPrice <= 0) {
+            $normalPrice = $product->getPrice();
+            if (!empty($configProduct) && (empty($normalPrice) || $normalPrice <= 0)) {
                 $product = $configProduct;
+                $normalPrice = $product->getData($normalPriceAttr);
+                if (empty($normalPrice) || $normalPrice <= 0) {
+                    $normalPrice = $product->getPrice();
+                }
+            } elseif (empty($configProduct)) {
                 $normalPrice = $product->getPrice();
             }
         }
 
-        $specialPrice = $product->getSpecialPrice();
-        if (empty($specialPrice)) {
-            $specialPrice = $normalPrice;
-        } else {
-            $specialFrom = $product->getSpecialFromDate();
-            $now = self::currentDate('Y-m-d H:i:s', 'string');
-            if (!empty($specialFrom) && $specialFrom <= $now) {
-                $specialTo = $product->getSpecialToDate();
-                if (!empty($specialTo) && $specialTo <= $now) {
+        $specialPrice = $product->getData($specialPriceAttr);
+        if (empty($specialPrice) || $specialPrice <= 0 || $specialPriceAttr == 'special_price') {
+            $specialPrice = $product->getSpecialPrice();
+            if (empty($specialPrice) || $specialPrice <= 0) {
+                $specialPrice = $normalPrice;
+            } else {
+                $specialFrom = $product->getSpecialFromDate();
+                $now = self::currentDate('Y-m-d H:i:s', 'string');
+                if (!empty($specialFrom) && $specialFrom <= $now) {
+                    $specialTo = $product->getSpecialToDate();
+                    if (!empty($specialTo) && $specialTo <= $now) {
+                        $specialPrice = $normalPrice;
+                    }
+                } else {
                     $specialPrice = $normalPrice;
                 }
-            } else {
-                $specialPrice = $normalPrice;
             }
         }
 
@@ -428,6 +446,8 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
         }
 
         $configProd = Mage::getStoreConfig('integracommerce/general/configprod', Mage::app()->getStore());
+        $normalPriceAttr = Mage::getStoreConfig('integracommerce/attributes/price', Mage::app()->getStore());
+        $specialPriceAttr = Mage::getStoreConfig('integracommerce/attributes/special_price', Mage::app()->getStore());
 
         if (!empty($configurableIds) && $configProd == 1) {
             $configCollection = Mage::getModel('catalog/product')
@@ -436,10 +456,12 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
                 ->addAttributeToSelect('*');
 
             foreach ($configCollection as $configurableProduct) {
-                list($normalPrice, $specialPrice) = self::checkPrice($product, $configurableProduct);
+                list($normalPrice, $specialPrice) = self::checkPrice(
+                    $normalPriceAttr, $specialPriceAttr, $product, $configurableProduct
+                );
             }
         } else {
-            list($normalPrice, $specialPrice) = self::checkPrice($product);
+            list($normalPrice, $specialPrice) = self::checkPrice($normalPriceAttr, $specialPriceAttr, $product);
         }
 
         $productControl = Mage::getStoreConfig('integracommerce/general/sku_control', Mage::app()->getStore());
@@ -496,8 +518,11 @@ class Novapc_Integracommerce_Helper_Data extends Mage_Core_Helper_Abstract
             $errorQueue->setProductId($productId);
         }
 
+        $requestedTimes = $errorQueue->getRequestedTimes();
+        $requestedTimes++;
         $errorQueue->setData($type . '_body', $body);
         $errorQueue->setData($type . '_error', $response);
+        $errorQueue->setRequestedTimes($requestedTimes);
         $errorQueue->save();
     }
 

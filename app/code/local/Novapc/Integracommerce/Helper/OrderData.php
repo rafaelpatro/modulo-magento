@@ -299,10 +299,38 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             ->setShippingAmount($shippingprice)
             ->setBaseShippingAmount($shippingprice);
 
+        $marketplaceName = $order['MarketplaceName'];
+        switch ($marketplaceName) {
+            case "Magazine Luiza":
+                $paymentMethod = 'integracommerce_magazine';
+                break;
+            case "Mobly":
+                $paymentMethod = 'integracommerce_mobly';
+                break;
+            case "B2W":
+                $paymentMethod = 'integracommerce_b2w';
+                break;
+            case "Walmart":
+                $paymentMethod = 'integracommerce_walmart';
+                break;
+            case "Dafiti":
+                $paymentMethod = 'integracommerce_dafiti';
+                break;
+            case "Carrefour":
+                $paymentMethod = 'integracommerce_carrefour';
+                break;
+            case "Cnova":
+                $paymentMethod = 'integracommerce_cnova';
+                break;
+            case "CNova":
+                $paymentMethod = 'integracommerce_cnova';
+                break;
+        }
+
         $orderPayment = Mage::getModel('sales/order_payment')
             ->setStoreId($storeId)
             ->setCustomerPaymentId(0)
-            ->setMethod('integracommerce_payment')
+            ->setMethod($paymentMethod)
             ->setPo_number(' – ')
             ->setIntegracommerceName($order['Payments'][0]['Name'])
             ->setIntegracommerceInstallments($order['Payments'][0]['Installments']);
@@ -316,10 +344,15 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $productsData = array();
         foreach ($order['Products'] as $key => $product) {
             $skuId = $product['IdSku'];
-            $productsIds[] = $skuId;
-            $productsData[$skuId]['Price'] =  $product['Price'];
-            $productsData[$skuId]['Quantity'] = $product['Quantity'];
-            $productsData[$skuId]['Discount'] = $product['Discount'];
+            if (array_key_exists($skuId, $productsData)) {
+                $newQty = $productsData[$skuId]['Quantity'] + $product['Quantity'];
+                $productsData[$skuId]['Quantity'] = $newQty;
+            } else {
+                $productsIds[] = $skuId;
+                $productsData[$skuId]['Price'] =  $product['Price'];
+                $productsData[$skuId]['Quantity'] = $product['Quantity'];
+                $productsData[$skuId]['Discount'] = $product['Discount'];
+            }
         }
 
         $productCollection = Mage::getModel('catalog/product')->getCollection()
@@ -365,7 +398,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         $mageOrder->setSubtotal($subTotal)
             ->setBaseSubtotal($subTotal)
             ->setGrandTotal($subTotal + $shippingprice)
-            ->setBaseGrandTotal($subTotal);
+            ->setBaseGrandTotal($subTotal + $shippingprice);
 
         $mageOrder->setData('integracommerce_id', $order['IdOrder']);
 
@@ -380,6 +413,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             $estimatedDate,
             false
         );
+
         $comment->setIsCustomerNotified(false);
 
         try {
@@ -478,7 +512,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
                 }
 
                 Mage::log(
-                    'Error: ' . $httpcode .
+                    'Error: ' . $return['httpCode'] .
                     'Erro ao atualizar o pedido ' . $mageOrderId .
                     ', Codigo Integracommerce: ' . $orderId .
                     '. Motivo: ' . $return['Message'] .
@@ -572,7 +606,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         }
     }
 
-    public static function nfeUpdate($commentData, $integraModel, $line, $orderId)
+    public static function nfeUpdate($commentData, $createdAt, $integraModel, $line, $orderId)
     {
         $formatoNfe = Mage::getStoreConfig('integracommerce/order_status/nfe_model', Mage::app()->getStore());
         $messageNF = "Não foi possivel enviar os dados da Nota Fiscal. Informações inválidas.";
@@ -583,14 +617,17 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
 
         //VERIFICANDO FORMATO UTILIZADO
         if ($formatoNfe == 'new') {
-            $preparedNfe = self::nfeFormat($commentData);
+            $preparedNfe = self::nfeFormat($commentData, $createdAt);
+
             if (empty($preparedNfe)) {
                 return Mage::throwException($messageNF);
             }
 
             $line[0] = $preparedNfe['numeroNota'];
             $line[1] = $preparedNfe['serieNota'];
+
             $return = self::checkDate($preparedNfe['dataEmissaoNota'], $integraModel);
+
             $line[2] = $return;
             if (strlen($preparedNfe['chaveNota']) < 44) {
                 $trimData = trim($preparedNfe['chaveNota'], " ");
@@ -729,7 +766,7 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         try {
             $status = $comment->getStatus();
             $commentData = $comment->getComment();
-
+            
             $lines = explode('|', $commentData);
             if ((empty($lines) && $status !== 'delivered') || empty($commentData)) {
                 return;
@@ -741,7 +778,11 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
             }
 
             if (($invoiceStatus && !empty($invoiceStatus)) && $invoiceStatus == $status) {
-                $body = self::nfeUpdate($commentData, $integraModel, $line, $orderId);
+                $createdAt = $comment->getCreatedAt();
+                $timeZone = Mage::getStoreConfig('general/locale/timezone');
+                $lastRequest = new DateTime($createdAt, new DateTimeZone($timeZone));
+                $createdAt = $lastRequest->format('d/m/Y');
+                $body = self::nfeUpdate($commentData, $createdAt, $integraModel, $line, $orderId);
             } elseif (($shippingStatus && !empty($shippingStatus)) && $shippingStatus == $status) {
                 $body = self::shipUpdate($integraModel, $line, $orderId);
             } elseif ($status == 'delivered') {
@@ -773,26 +814,55 @@ class Novapc_Integracommerce_Helper_OrderData extends Novapc_Integracommerce_Hel
         return array($integraOrder,$mageCustomer,$mageOrder);
     }
 
-    public static function nfeFormat($commentData)
+    public static function nfeFormat($commentData, $createdAt = null)
     {
         preg_match('/^Nota/', $commentData, $checkData, PREG_OFFSET_CAPTURE);
-        if (empty($checkData)) {
+        if (strpos($commentData, 'Nota') === false) {
             return;
         }
 
+        $useCommentDate = Mage::getStoreConfig('integracommerce/order_status/invoice_date', Mage::app()->getStore());
         $preparedArray = array();
-        $commentArray = explode("\n", $commentData);
-        $preparedArray['numeroNota'] = substr($commentArray[0], 13);
-        $preparedArray['serieNota'] = substr($commentArray[1], 7);
-        $preparedArray['dataEmissaoNota'] = substr($commentArray[2], 18);
-        $preparedArray['chaveNota'] = substr($commentArray[3], 15);
-        if (empty($preparedArray['chaveNota']) || preg_match("/[a-z]/i", $preparedArray['chaveNota'])) {
-            $preparedArray['chaveNota'] = substr($commentArray[4], 15);
+        if($commentData != strip_tags($commentData)) {
+            $search = array("<br>", "<br />", "<br/>");
+            $commentData = str_replace($search, " #n ", $commentData);
+
+            $commentData = strip_tags($commentData, "<p><h1><h2><h3><h4><h5><h6></p></h1></h2></h3></h4></h5></h6>");
+
+            $commentData = str_replace(" #n ", " \\n ", $commentData);
         }
 
-        $preparedArray['xmlNota'] = substr($commentArray[5], 15);
-        if (empty($preparedArray['xmlNota'])) {
-            $preparedArray['xmlNota'] = substr($commentArray[5], 13);
+        $commentArray = explode("\\n", $commentData);
+        if (!is_array($commentArray) || count($commentArray) < 4) {
+            $commentArray = explode("\n", $commentData);
+        }
+
+        $preparedArray['numeroNota'] = substr(trim($commentArray[0]), 13);
+        $preparedArray['serieNota'] = substr(trim($commentArray[1]), 7);
+
+        if ($useCommentDate == true && !empty($createdAt)) {
+            $preparedArray['dataEmissaoNota'] = $createdAt;
+            if (count($commentArray) < 5) {
+                array_splice($commentArray, 2, 0, $createdAt);
+            }
+        } else {
+            $preparedArray['dataEmissaoNota'] = substr(trim($commentArray[2]), 18);
+        }
+
+        $chaveNota = substr(trim($commentArray[3]), 15);
+        $preparedArray['chaveNota'] = trim(str_replace(":", "", $chaveNota));
+
+        if (empty($preparedArray['chaveNota']) || preg_match("/[a-z]/i", $preparedArray['chaveNota'])) {
+            $preparedArray['chaveNota'] = substr(trim($commentArray[4]), 15);
+        }
+
+        if (isset($commentArray[5])) {
+            $preparedArray['xmlNota'] = substr(trim($commentArray[5]), 15);
+            if (empty($preparedArray['xmlNota'])) {
+                $preparedArray['xmlNota'] = substr(trim($commentArray[5]), 13);
+            }
+        } else {
+            $preparedArray['xmlNota'] = "";
         }
 
         return $preparedArray;

@@ -12,8 +12,8 @@
  * @link      https://github.com/integracommerce/modulo-magento
  */
 
-class Novapc_Integracommerce_Model_Payment extends Mage_Payment_Model_Method_Abstract
+class Novapc_Integracommerce_Model_B2w extends Mage_Payment_Model_Method_Abstract
 {
-    protected $_code = 'integracommerce_payment';
+    protected $_code = 'integracommerce_b2w';
     protected $_infoBlockType = 'integracommerce/info_payment';
 }

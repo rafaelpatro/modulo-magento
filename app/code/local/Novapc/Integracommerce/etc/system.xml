@@ -31,7 +31,7 @@
             <show_in_store>1</show_in_store>
             <groups>
                 <novapc_information_group translate="label" module="integracommerce">
-                    <label>Important informations</label>
+                    <label>Informações Importantes</label>
                     <sort_order>0</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
@@ -39,7 +39,7 @@
                     <comment>
                         <![CDATA[
                             <div>
-                                <h3>v. 2.0.7 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
+                                <h3>v. 2.1.2 Developed by<br> NovaPC - Tecnologia da Informação.</h3>
                                 <img src="http://novapc.com.br/images/logo.png" alt="Smiley face" height="200" width="300">
                                 <br>
                                 <br>
@@ -173,7 +173,29 @@
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
-                    <fields> 
+                    <fields>
+                        <price translate="label" module="integracommerce">
+                            <label>Preço De</label>
+                            <comment>Selecione o atributo para ser usado como preço base</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>1</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </price>
+                        <special_price translate="label" module="integracommerce">
+                            <label>Preço Por</label>
+                            <comment>Selecione o atributo para ser usado como preço especial</comment>
+                            <tooltip>Caso não tenha um atributo específico, o atributo padrão do Magento pode ser
+                                utilizado ou selecione o mesmo atributo do campo anterior</tooltip>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <sort_order>2</sort_order>
+                            <frontend_type>select</frontend_type>
+                            <source_model>integracommerce/system_config_source_dropdown_attributes</source_model>
+                        </special_price>
                         <nbm_origin translate="label" module="integracommerce">
                             <label>NBM Origin</label>
                             <backend_model>integracommerce/intgrattr</backend_model>
@@ -371,6 +393,21 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </nfe_model>
+                        <invoice_date translate="label" module="integracommerce">
+                            <label>Data do Comentário como Data de Emissão da Fatura</label>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <frontend_type>select</frontend_type>
+                            <sort_order>60</sort_order>
+                            <comment>IMPORTANTE: Se a opção SIM for marcada a data de inserção do comentário
+                            será usada como Data de Emissão da Fatura, independente de ter sido informada ou
+                            não no momento do envio.</comment>
+                            <show_in_default>1</show_in_default>
+                            <show_in_website>1</show_in_website>
+                            <show_in_store>1</show_in_store>
+                            <depends>
+                                <nfe_model>new</nfe_model>
+                            </depends>
+                        </invoice_date>
                     </fields>
                 </order_status> 
             </groups>

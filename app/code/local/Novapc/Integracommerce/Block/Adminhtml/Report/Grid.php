@@ -15,6 +15,7 @@
 class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_Block_Widget_Grid
 {
     const CONFIRM_MESSAGE = 'Esta ação removerá os itens da fila, inclusive caso ainda não tenha sido atualizado!';
+    const RESET_MESSAGE = 'Esta ação indicará que o erro foi corrigido, o produto voltará a tentar ser atualizado!';
 
     public function __construct()
     {
@@ -110,6 +111,15 @@ class Novapc_Integracommerce_Block_Adminhtml_Report_Grid extends Mage_Adminhtml_
                 'label'    => Mage::helper('integracommerce')->__('Excluir da Fila'),
                 'url'      => $this->getUrl('*/*/massDelete'),
                 'confirm'  => Mage::helper('integracommerce')->__(self::CONFIRM_MESSAGE)
+            )
+        );
+
+        $this->getMassactionBlock()->addItem(
+            'reset',
+            array(
+                'label'    => Mage::helper('integracommerce')->__('Erros Corrigidos'),
+                'url'      => $this->getUrl('*/*/massReset'),
+                'confirm'  => Mage::helper('integracommerce')->__(self::RESET_MESSAGE)
             )
         );
 

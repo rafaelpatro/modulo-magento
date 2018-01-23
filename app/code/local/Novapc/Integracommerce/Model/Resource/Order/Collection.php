@@ -55,9 +55,10 @@ class Novapc_Integracommerce_Model_Resource_Order_Collection extends Mage_Core_M
 
     public function orderStatusFilter($status)
     {
+        $stateTable = Mage::getSingleton('core/resource')->getTableName('sales/order_status_state');
         $collection = Mage::getResourceModel('sales/order_status_collection');
         $collection->getSelect()->joinLeft(
-            array('state_table' => 'sales_order_status_state'),
+            array('state_table' => $stateTable),
             'main_table.status=state_table.status',
             array('state', 'is_default')
         );

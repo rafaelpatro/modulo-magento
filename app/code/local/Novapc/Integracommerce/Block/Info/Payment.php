@@ -11,6 +11,7 @@
  * @version   GIT: 1.0
  * @link      https://github.com/integracommerce/modulo-magento
  */
+
 class Novapc_Integracommerce_Block_Info_Payment extends Mage_Payment_Block_Info
 {
     protected function _construct()
@@ -24,13 +25,18 @@ class Novapc_Integracommerce_Block_Info_Payment extends Mage_Payment_Block_Info
         if (null !== $this->_paymentSpecificInformation) {
             return $this->_paymentSpecificInformation;
         }
+
         $info = $this->getInfo();
         $transport = new Varien_Object();
         $transport = parent::_prepareSpecificInformation($transport);
-        $transport->addData(array(
-            Mage::helper('integracommerce')->__('Metodo de Pagamento') => $info->getIntegracommerceName(),
-            Mage::helper('integracommerce')->__('Parcelas') => $info->getIntegracommerceInstallments()
-        ));
+
+        $transport->addData(
+            array(
+                Mage::helper('integracommerce')->__('Metodo de Pagamento') => $info->getIntegracommerceName(),
+                Mage::helper('integracommerce')->__('Parcelas') => $info->getIntegracommerceInstallments()
+            )
+        );
+
         return $transport;
     }
 }
